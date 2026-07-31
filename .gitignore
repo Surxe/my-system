@@ -1,0 +1,15 @@
+# This repo is documentation only — never commit secrets.
+# Guard against accidental secret/key files landing here.
+*.key
+*.pem
+*.env
+.env
+*.secret
+secrets/
+credentials*
+
+# Encrypted-note payloads never belong in the repo. The pointer .md is tracked;
+# any actual (encrypted) content is ignored.
+private/encrypted-notes/
+*.age
+*.gpg
