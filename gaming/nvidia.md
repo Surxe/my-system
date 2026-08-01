@@ -1,6 +1,6 @@
 # NVIDIA (gaming)
 
-Gaming runs on the **NVIDIA RTX 5070** with proprietary driver `595.84`
+Gaming runs on the **NVIDIA RTX 5070** with proprietary driver `595.71.05`
 ([../hardware/gpu.md](../hardware/gpu.md)).
 
 - Vulkan works; the card is detected correctly.
