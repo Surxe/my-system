@@ -52,7 +52,7 @@ Avoid:
 ## Git workflow
 
 - Repositories live under `/srv/dev/repos`.
-- SSH authentication preferred.
+- HTTPS remotes + PAT via `credential.helper store` (no SSH). See [development/git-workflow.md](development/git-workflow.md#authentication).
 - Use branches and pull requests where appropriate.
 - You may help write code and commits, but **avoid automatic destructive
   actions**. Commit or push only when asked.

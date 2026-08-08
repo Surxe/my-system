@@ -9,7 +9,7 @@ Development happens on the Debian side, primarily under `/srv/dev`, shared via t
 - Git workflow: [git-workflow.md](git-workflow.md)
 - Shell helpers: [shell-helpers.md](shell-helpers.md)
 - Deployable artifacts + install.sh (host scripts, dotfiles): [uncommitted-artifacts.md](uncommitted-artifacts.md)
-- SSH: [ssh.md](ssh.md)
+- SSH (not used for git — why): [ssh.md](ssh.md)
 - Claude / AI usage: [claude.md](claude.md)
 
 ## Goals
