@@ -29,10 +29,30 @@ scopes — a classic PAT's scopes cannot express "no force-push" or "no merge".
     needs *Restrict who can push to matching branches → ethan only*, which on
     private personal repos requires **GitHub Pro**.
 
+### Merge gate on a free plan (current reality)
+
+This account is on the **free** plan, where **rulesets / branch protection only
+apply to public repos** — private repos return HTTP 403 ("Upgrade to GitHub Pro or
+make this repository public"). Consequences:
+
+- **Public repos:** the ruleset applies, the merge gate above holds in full.
+- **Private repos:** **no server-side gate exists.** `Surxe-dev`'s `Write`
+  collaborator access is unconstrained — it can push directly to `master`, merge
+  its own PRs, force-push, and delete branches. The two-identity split degrades to
+  *convention* here, not enforcement.
+
+Chosen posture (2026-08-08): **best-effort ruleset, default public.** `devrepo new`
+(and `devscaffold`) create **public** repos by default, so the merge gate applies;
+pass `--private` to opt into a private repo, which on the free plan has no enforced
+gate. On 403 `devscaffold` warns and continues so the repo + collaborator still get
+created (no orphan repos). Revisit via GitHub Pro or the fork model if enforced
+gating on private repos becomes necessary.
+
 ## `master` ruleset (per repo)
 
-Settings → Rules → Rulesets, target branch `master`. This is what
-`devscaffold` (below) applies automatically via `gh api`:
+Settings → Rules → Rulesets, target branch `master`. `devscaffold` (below)
+applies this automatically via `gh api` on a **best-effort** basis — see
+"Merge gate on a free plan" above for why it silently no-ops on private repos:
 
 - Require a pull request before merging
 - Require approvals: 1
@@ -51,7 +71,12 @@ Settings → Rules → Rulesets, target branch `master`. This is what
 
 ## Programmatic repo scaffolding (`devscaffold`)
 
-`devnew`/`devclone` ([shell-helpers.md](shell-helpers.md)) can be driven from
+> The `devscaffold` wrapper and its sudoers rule shown below are **live on disk but
+> not yet version-controlled** — the code blocks here are the de-facto source of
+> truth. Tracked in [uncommitted-artifacts.md](uncommitted-artifacts.md).
+
+
+`devrepo new`/`devrepo clone` ([shell-helpers.md](shell-helpers.md)) can be driven from
 `dev`-context automation (scripts, Claude). The catch: creating a repo under
 `Surxe`, adding `Surxe-dev` as a collaborator, and applying the ruleset all
 require **ethan's** PAT — but `Surxe-dev`'s constrained token deliberately can't
@@ -70,6 +95,11 @@ under `/srv/dev`; once the empty remote exists and `Surxe-dev` is a collaborator
 all local git (clone/init/commit/push) runs as the ordinary `dev` identity with the
 dev PAT. Ethan's PAT therefore never touches the filesystem tree and there is no
 ambient auth to leak.
+
+Adding `Surxe-dev` as a collaborator on a personal repo creates a **pending
+invitation** it must accept before its PAT can push. That acceptance can only be
+performed by the invitee, so it happens on the dev side via `devaccept`
+([shell-helpers.md](shell-helpers.md)) — not in `devscaffold`.
 
 | Property | How it's met |
 | --- | --- |
@@ -94,10 +124,14 @@ OWNER=Surxe
 DEVACCT=Surxe-dev
 BRANCH=master
 
-usage(){ echo "usage: devscaffold <reponame> [--public]" >&2; exit 2; }
+usage(){ echo "usage: devscaffold <reponame> [--private|--public]" >&2; exit 2; }
 
-name="${1:-}"; vis="private"
-[ "${2:-}" = "--public" ] && vis="public"
+name="${1:-}"; vis="public"           # default public (free-plan merge gate works)
+case "${2:-}" in
+    ""|--public) vis="public"  ;;
+    --private)   vis="private" ;;
+    *) usage ;;
+esac
 [ -n "$name" ] || usage
 [[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]] || { echo "bad repo name" >&2; exit 1; }
 [[ "$name" == *..* ]] && { echo "bad repo name" >&2; exit 1; }
@@ -106,14 +140,24 @@ if gh repo view "$OWNER/$name" >/dev/null 2>&1; then
     echo "already exists on GitHub: $OWNER/$name" >&2; exit 1
 fi
 
-# 1. create empty remote (no branches yet)
-gh repo create "$OWNER/$name" --"$vis" >/dev/null
+# 1. create empty remote (no branches yet). Use the REST endpoint, NOT
+#    `gh repo create` — the latter goes through the GraphQL createRepository
+#    mutation, which demands full `repo` scope even for public repos. REST
+#    `POST /user/repos` honors the minimal `public_repo` scope for public repos.
+priv=false; [ "$vis" = private ] && priv=true
+gh api -X POST /user/repos -f name="$name" -F private="$priv" >/dev/null
 
 # 2. grant the dev automation account push (Write) access
 gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
 
-# 3. apply the master ruleset (PR+1 approval, no force-push, no deletion)
-gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null <<JSON
+# 3. BEST-EFFORT: apply the master ruleset (PR+1 approval, no force-push, no
+#    deletion). On a FREE plan rulesets only work on PUBLIC repos; a private repo
+#    returns 403 ("Upgrade to GitHub Pro..."). We warn and continue rather than
+#    abort, so the repo + collaborator (steps 1-2) still stand and no orphan is
+#    left behind. WARNING: a private repo scaffolded this way has NO server-side
+#    merge gate — Surxe-dev's Write access is unconstrained (it can push, merge,
+#    force-push, and delete master). See "Merge gate on a free plan" below.
+if ! gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1 <<JSON
 {
   "name": "protect-$BRANCH",
   "target": "branch",
@@ -133,6 +177,10 @@ gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null <<JSON
   ]
 }
 JSON
+then
+    echo "warning: could not apply $BRANCH ruleset — no server-side merge gate" \
+         "on this repo (free plan private repos need GitHub Pro)" >&2
+fi
 
 echo "https://github.com/$OWNER/$name.git"   # plain remote URL only
 ```
@@ -156,6 +204,22 @@ dev ALL=(ethan) NOPASSWD: /usr/local/sbin/devscaffold
 Argument freedom is bounded by the script being fixed, arg-validated code that only
 creates repos — the same trust model as `devperms` trusting its path check.
 Validate after install with `sudo visudo -c`.
+
+### Token scopes for `devscaffold`
+
+The token `devscaffold` authenticates with (keyring, or the `GH_TOKEN` file below)
+needs, at minimum:
+
+- **Public default path:** classic **`public_repo`** — covers REST repo create +
+  collaborator add + ruleset on public repos.
+- **`--private` path:** classic **`repo`** (no finer classic scope grants
+  private-repo admin).
+- Do **not** grant `repo:invite` here — accepting invites is the dev side
+  (`devaccept`); this token only *creates* the invite.
+
+Gotcha: `gh repo create` uses the GraphQL `createRepository` mutation, which
+requires full `repo` even for public repos — that's why step 1 uses the REST
+`POST /user/repos` endpoint instead, which respects `public_repo`.
 
 ### Hardening: dedicated fine-grained PAT (recommended follow-up)
 

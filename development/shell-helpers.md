@@ -5,6 +5,10 @@ for the shared `ethan` ↔ `dev` repo workflow. They automate the recurring chor
 of: create/clone a repo, apply the shared-file permission model, mark it
 git-`safe.directory` for **both** identities, then drop into a `dev` shell.
 
+These function files live in ethan's home and are **not version-controlled** —
+see [uncommitted-artifacts.md](uncommitted-artifacts.md) for the full inventory of
+on-disk code (incl. `40-devrepo.sh`, `devscaffold`, `devperms`) awaiting a repo.
+
 See the permission model in
 [../users-and-permissions/filesystem-permissions.md](../users-and-permissions/filesystem-permissions.md)
 and the two-identity git split in [git-workflow.md](git-workflow.md).
@@ -17,23 +21,34 @@ and the two-identity git split in [git-workflow.md](git-workflow.md).
 | `devperms [dir]` | Fix shared perms on a repo via `sudo /usr/local/sbin/devperms` (defaults to `$PWD`). |
 | `devsafe_ethan [dir]` | Idempotently add `dir` to git `safe.directory` for **ethan** (`~/.gitconfig`). |
 | `devsafe_dev [dir]` | Same, but for **dev** — runs git as `sudo -u dev -H` so it writes `/home/dev/.gitconfig`. |
-| `devclone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS, **dev** PAT) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh`. Repo must already exist on GitHub. |
-| `devnew <repo> [--public]` | Create the GitHub remote via `devscaffold` (as ethan), then local `git init -b master` + `remote add origin`, perms + both safe-dirs + `devsh`. |
+| `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b master` + `remote add origin`, perms + both safe-dirs + `devaccept` + `devsh`. |
+| `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devaccept` + `devsh`. Repo must already exist on GitHub. |
+| `devaccept` | As **dev**: accept any pending `Surxe-dev` repository-collaborator invitations, using the dev PAT from dev's credential store. Idempotent. |
 
-`devclone` / `devnew` refuse to clobber an existing destination and validate their
-argument shape (`devclone` needs a `profile/repo` slug; `devnew` rejects a slug
-with `/`).
+`devrepo` (both modes) refuses to clobber an existing destination and validates its
+argument shape (`clone` needs a `profile/repo` slug; `new` rejects a slug with `/`).
+The two modes share one tail: perms + both safe-dirs + `devaccept` + `cd` + `devsh`.
 
-`devclone` now uses **HTTPS**, matching the classic-PAT `credential.helper store`
+### Auto-accepting the `Surxe-dev` invitation (`devaccept`)
+
+`devscaffold` adds `Surxe-dev` as a collaborator, which on personal repos creates a
+**pending invitation** the invited account must accept before its PAT can push.
+Acceptance can only be done *by the invitee*, so it can't live in `devscaffold`
+(which runs as ethan) — it runs as **dev**. `devaccept` reads the dev PAT from dev's
+`credential.helper store`, lists `GET /user/repository_invitations`, and `PATCH`es
+each to accept. It's idempotent (no invites → no-op) and runs in the shared tail so
+both `new` and `clone` leave the dev identity immediately able to push.
+
+`devrepo clone` uses **HTTPS**, matching the classic-PAT `credential.helper store`
 auth policy in [git-workflow.md](git-workflow.md) (superseding the earlier
 `git@github.com` SSH URL). The clone runs as `dev` with the dev PAT — no ethan
 creds involved.
 
-### `devnew` → `devscaffold` (creating the GitHub remote)
+### `devrepo new` → `devscaffold` (creating the GitHub remote)
 
-`devnew` no longer just `git init`s a bare local repo — it creates the matching
+`devrepo new` doesn't just `git init` a bare local repo — it creates the matching
 remote under `Surxe`, grants `Surxe-dev` push access, and applies the `master`
-ruleset. Those account-side actions need **ethan's** PAT, so `devnew` calls the
+ruleset. Those account-side actions need **ethan's** PAT, so it calls the
 root-owned wrapper `/usr/local/sbin/devscaffold` via a narrow `sudo -u ethan` rule:
 
 ```bash
@@ -72,10 +87,10 @@ Files in `~/.bashrc.d/`:
 | `10-devsh.sh` | `devsh` |
 | `20-devperms.sh` | `devperms` |
 | `30-devsafe.sh` | `devsafe_ethan`, `devsafe_dev` |
-| `40-devrepo.sh` | `devclone`, `devnew` |
+| `40-devrepo.sh` | `devrepo` (`new` / `clone` modes), `devaccept` |
 
 **Numeric prefixes are cosmetic.** Sourcing only *defines* functions; bash
-resolves the names a function calls (e.g. `devclone` → `devperms`) at **call**
+resolves the names a function calls (e.g. `devrepo` → `devperms`) at **call**
 time, by which point every file has been sourced. Order would only matter if a
 file *executed* code at source time that depended on another file — none of these
 do. Prefixes are kept purely as human-facing ordering and as cheap insurance if
