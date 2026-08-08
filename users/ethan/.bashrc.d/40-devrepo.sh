@@ -1,15 +1,38 @@
-# --- accept any pending Surxe-dev collaborator invitations (runs AS dev) ---
+# --- accept pending Surxe-dev collaborator invitations (runs AS dev) ---
+#   devaccept [repo]   # if repo given, poll until that invite arrives (bounded)
 devaccept() {
-    sudo -u dev -H bash -c '
+    sudo -u dev -H WANT_REPO="${1:-}" bash -c '
         set -euo pipefail
         export GIT_TERMINAL_PROMPT=0
         tok=$(printf "protocol=https\nhost=github.com\n\n" \
               | git credential fill 2>/dev/null | sed -n "s/^password=//p")
         [ -n "$tok" ] || { echo "devaccept: no dev github token in credential store" >&2; exit 1; }
-        ids=$(GH_TOKEN="$tok" gh api /user/repository_invitations --jq ".[].id" 2>/dev/null || true)
-        for id in $ids; do
-            GH_TOKEN="$tok" gh api -X PATCH "/user/repository_invitations/$id" >/dev/null \
-                && echo "devaccept: accepted invitation $id"
+
+        want="$WANT_REPO"
+        start=$(date +%s)
+        deadline=$(( start + 20 ))   # cap the wait at 20s
+
+        while :; do
+            invites=$(GH_TOKEN="$tok" gh api /user/repository_invitations \
+                        --jq ".[] | \"\(.id)\t\(.repository.name)\"" 2>/dev/null || true)
+
+            # accept everything visible right now
+            printf "%s\n" "$invites" | while IFS=$'"'"'\t'"'"' read -r id name; do
+                [ -n "$id" ] || continue
+                GH_TOKEN="$tok" gh api -X PATCH "/user/repository_invitations/$id" >/dev/null \
+                    && echo "devaccept: accepted invitation $id ($name)"
+            done
+
+            # done if not waiting for a specific repo, or it just showed up
+            if [ -z "$want" ] || printf "%s\n" "$invites" | grep -qP "\t${want}$"; then
+                [ -n "$want" ] && echo "devaccept: $want invite seen after $(( $(date +%s) - start ))s"
+                break
+            fi
+            [ "$(date +%s)" -ge "$deadline" ] && {
+                echo "devaccept: timed out after $(( $(date +%s) - start ))s waiting for $want" >&2
+                exit 1
+            }
+            sleep 1
         done
     '
 }
@@ -53,7 +76,7 @@ devrepo() {
     devperms "$dest"      || return 1
     devsafe_ethan "$dest" || return 1
     devsafe_dev "$dest"   || return 1
-    devaccept || echo "warning: could not auto-accept invitations — accept manually" >&2
+    devaccept "$reponame" || echo "warning: could not auto-accept invitations — accept manually" >&2
     cd "$dest" || return 1
     devsh
 }
