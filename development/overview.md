@@ -7,6 +7,7 @@ Development happens on the Debian side, primarily under `/srv/dev`, shared via t
 - Languages & tooling: [languages.md](languages.md)
 - Editors: [editors.md](editors.md)
 - Git workflow: [git-workflow.md](git-workflow.md)
+- Shell helpers: [shell-helpers.md](shell-helpers.md)
 - SSH: [ssh.md](ssh.md)
 - Claude / AI usage: [claude.md](claude.md)
 
