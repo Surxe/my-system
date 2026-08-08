@@ -1,0 +1,7 @@
+<!-- CLAUDE.md.blueprint -->
+<!-- This is the TEMPLATE for the assembled CLAUDE.md. Edit this file to change -->
+<!-- the fixed structure/prose. Each {{token}} on its own line below is replaced -->
+<!-- by build-claude-md.sh with the contents of sections/<token>.md. -->
+<!-- Do NOT edit the generated CLAUDE.md directly; edit this blueprint instead. -->
+
+{{repo-descriptions}}

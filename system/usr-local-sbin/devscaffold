@@ -1,0 +1,70 @@
+#!/bin/bash
+# GitHub-side repo scaffolding as ethan. Creates the remote, grants the dev
+# account push access, and (best-effort) applies the master ruleset. Touches
+# NOTHING under /srv/dev — all local git work is done afterwards as `dev`.
+set -euo pipefail
+export PATH=/usr/bin:/bin
+export HOME=/home/ethan
+export GIT_TERMINAL_PROMPT=0          # never prompt; fail closed
+
+# Explicit scaffolding token — decouples the programmatic path from the
+# interactive keyring (not reliably available under sudo/automation).
+if [ -r /home/ethan/.config/devscaffold/token ]; then
+    GH_TOKEN="$(cat /home/ethan/.config/devscaffold/token)"; export GH_TOKEN
+fi
+
+OWNER=Surxe
+DEVACCT=Surxe-dev
+BRANCH=master
+
+usage(){ echo "usage: devscaffold <reponame> [--public]" >&2; exit 2; }
+
+
+# Visibility
+name="${1:-}"; vis="public"           # default public (free-plan merge gate works)
+case "${2:-}" in
+    ""|--public) vis="public"  ;;
+    --private)   vis="private" ;;
+    *) usage ;;
+esac
+[ -n "$name" ] || usage
+
+if gh repo view "$OWNER/$name" >/dev/null 2>&1; then
+    echo "already exists on GitHub: $OWNER/$name" >&2; exit 1
+fi
+
+# 1. create empty remote (no branches yet)
+priv=false; [ "$vis" = private ] && priv=true
+gh api -X POST /user/repos -f name="$name" -F private="$priv" >/dev/null
+
+# 2. grant the dev automation account push (Write) access
+gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
+
+# 3. BEST-EFFORT ruleset: free-plan private repos return 403; warn + continue so
+#    the repo + collaborator still stand and no orphan is left behind.
+if ! gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1 <<JSON
+{
+  "name": "protect-$BRANCH",
+  "target": "branch",
+  "enforcement": "active",
+  "conditions": { "ref_name": { "include": ["refs/heads/$BRANCH"], "exclude": [] } },
+  "rules": [
+    { "type": "deletion" },
+    { "type": "non_fast_forward" },
+    { "type": "pull_request",
+      "parameters": {
+        "required_approving_review_count": 1,
+        "dismiss_stale_reviews_on_push": false,
+        "require_code_owner_review": false,
+        "require_last_push_approval": false,
+        "required_review_thread_resolution": false
+      } }
+  ]
+}
+JSON
+then
+    echo "warning: could not apply $BRANCH ruleset — no server-side merge gate" \
+         "on this repo (free plan private repos need GitHub Pro)" >&2
+fi
+
+echo "https://github.com/$OWNER/$name.git"   # plain remote URL only

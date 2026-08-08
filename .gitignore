@@ -13,3 +13,7 @@ credentials*
 private/encrypted-notes/
 *.age
 *.gpg
+
+# devscaffold PAT — the *.example is tracked; the real token file never is.
+**/devscaffold/token
+*.token

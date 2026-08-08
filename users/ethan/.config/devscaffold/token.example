@@ -1,0 +1,11 @@
+# Example only — copy to ./token (same dir) and paste a real PAT on one line.
+# The real `token` file is gitignored and must NEVER be committed.
+#
+# Installed location: ~ethan/.config/devscaffold/token  (chmod 0600, ethan-owned)
+# devscaffold reads it to set GH_TOKEN, decoupling from the interactive keyring.
+#
+# Minimum scope (classic PAT): public_repo  (public repos, the default path).
+#   --private scaffolding additionally needs full `repo`.
+# Better: a fine-grained PAT limited to Administration: read/write on Surxe.
+# See development/git-workflow.md (Token scopes for devscaffold).
+github_pat_XXXXXXXXXXXXXXXXXXXXXXXX

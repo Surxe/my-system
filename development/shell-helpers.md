@@ -5,9 +5,12 @@ for the shared `ethan` ↔ `dev` repo workflow. They automate the recurring chor
 of: create/clone a repo, apply the shared-file permission model, mark it
 git-`safe.directory` for **both** identities, then drop into a `dev` shell.
 
-These function files live in ethan's home and are **not version-controlled** —
-see [uncommitted-artifacts.md](uncommitted-artifacts.md) for the full inventory of
-on-disk code (incl. `40-devrepo.sh`, `devscaffold`, `devperms`) awaiting a repo.
+**Canonical source in this repo:** ethan's modules live under
+[`users/ethan/.bashrc.d/`](../users/ethan/.bashrc.d/) and the host scripts under
+[`system/usr-local-sbin/`](../system/usr-local-sbin/); deploy with
+[`users/install.sh`](../users/install.sh). (Only `40-devrepo.sh` is captured so
+far — `10/20/30-*.sh` still need copying in from ethan's home; see that dir's
+`README.md`.)
 
 See the permission model in
 [../users-and-permissions/filesystem-permissions.md](../users-and-permissions/filesystem-permissions.md)

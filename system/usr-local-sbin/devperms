@@ -1,0 +1,16 @@
+#!/bin/bash
+# Apply shared ethan:developers perms to a repo under /srv/dev/repos
+set -euo pipefail
+
+dir="${1:-}"
+real="$(readlink -f -- "$dir" 2>/dev/null || true)"
+
+case "$real" in
+    /srv/dev/repos/*) ;;
+    *) echo "refusing: '$dir' is not under /srv/dev/repos" >&2; exit 1 ;;
+esac
+[ -d "$real" ] || { echo "not a directory: $real" >&2; exit 1; }
+
+chown -R ethan:developers "$real"
+find "$real" -type d -exec chmod 2775 {} +
+find "$real" -type f -exec chmod g+rw  {} +

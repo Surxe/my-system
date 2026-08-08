@@ -71,9 +71,12 @@ applies this automatically via `gh api` on a **best-effort** basis — see
 
 ## Programmatic repo scaffolding (`devscaffold`)
 
-> The `devscaffold` wrapper and its sudoers rule shown below are **live on disk but
-> not yet version-controlled** — the code blocks here are the de-facto source of
-> truth. Tracked in [uncommitted-artifacts.md](uncommitted-artifacts.md).
+> **Canonical source is in this repo:** the wrapper is
+> [`system/usr-local-sbin/devscaffold`](../system/usr-local-sbin/devscaffold) and
+> the sudoers rule is
+> [`system/etc-sudoers.d/devscaffold`](../system/etc-sudoers.d/devscaffold).
+> Deploy both with [`users/install.sh`](../users/install.sh) (run as ethan). This
+> section explains the design; edit the files, not this prose.
 
 
 `devrepo new`/`devrepo clone` ([shell-helpers.md](shell-helpers.md)) can be driven from
@@ -108,102 +111,25 @@ performed by the invitee, so it happens on the dev side via `devaccept`
 | minimal privilege | one fixed program, strict arg validation, account-side actions only |
 | auditable | every use is a sudo log line |
 
-### `/usr/local/sbin/devscaffold` (root-owned, `0755`)
+### The wrapper — [`system/usr-local-sbin/devscaffold`](../system/usr-local-sbin/devscaffold)
 
-```bash
-#!/bin/bash
-# GitHub-side repo scaffolding as ethan. Creates the remote, grants the dev
-# account push access, and applies the master ruleset. Touches NOTHING under
-# /srv/dev — all local git work is done afterwards by the `dev` identity.
-set -euo pipefail
-export PATH=/usr/bin:/bin
-export HOME=/home/ethan
-export GIT_TERMINAL_PROMPT=0          # never prompt; fail closed
+Deployed to `/usr/local/sbin/devscaffold` (`root:root 0755`) by `install.sh`. As
+ethan it, in order: (1) creates the empty remote via REST `POST /user/repos`
+(**not** `gh repo create`, whose GraphQL `createRepository` needs full `repo` even
+for public repos); (2) grants `Surxe-dev` push access; (3) **best-effort** applies
+the `master` ruleset — on a free plan this 403s for private repos, so it warns and
+continues rather than abort (no orphan repos; see "Merge gate on a free plan"). It
+prints only the plain remote URL. Read the file for the exact code.
 
-OWNER=Surxe
-DEVACCT=Surxe-dev
-BRANCH=master
+### The sudo bridge — [`system/etc-sudoers.d/devscaffold`](../system/etc-sudoers.d/devscaffold)
 
-usage(){ echo "usage: devscaffold <reponame> [--private|--public]" >&2; exit 2; }
-
-name="${1:-}"; vis="public"           # default public (free-plan merge gate works)
-case "${2:-}" in
-    ""|--public) vis="public"  ;;
-    --private)   vis="private" ;;
-    *) usage ;;
-esac
-[ -n "$name" ] || usage
-[[ "$name" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$ ]] || { echo "bad repo name" >&2; exit 1; }
-[[ "$name" == *..* ]] && { echo "bad repo name" >&2; exit 1; }
-
-if gh repo view "$OWNER/$name" >/dev/null 2>&1; then
-    echo "already exists on GitHub: $OWNER/$name" >&2; exit 1
-fi
-
-# 1. create empty remote (no branches yet). Use the REST endpoint, NOT
-#    `gh repo create` — the latter goes through the GraphQL createRepository
-#    mutation, which demands full `repo` scope even for public repos. REST
-#    `POST /user/repos` honors the minimal `public_repo` scope for public repos.
-priv=false; [ "$vis" = private ] && priv=true
-gh api -X POST /user/repos -f name="$name" -F private="$priv" >/dev/null
-
-# 2. grant the dev automation account push (Write) access
-gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
-
-# 3. BEST-EFFORT: apply the master ruleset (PR+1 approval, no force-push, no
-#    deletion). On a FREE plan rulesets only work on PUBLIC repos; a private repo
-#    returns 403 ("Upgrade to GitHub Pro..."). We warn and continue rather than
-#    abort, so the repo + collaborator (steps 1-2) still stand and no orphan is
-#    left behind. WARNING: a private repo scaffolded this way has NO server-side
-#    merge gate — Surxe-dev's Write access is unconstrained (it can push, merge,
-#    force-push, and delete master). See "Merge gate on a free plan" below.
-if ! gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1 <<JSON
-{
-  "name": "protect-$BRANCH",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["refs/heads/$BRANCH"], "exclude": [] } },
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "pull_request",
-      "parameters": {
-        "required_approving_review_count": 1,
-        "dismiss_stale_reviews_on_push": false,
-        "require_code_owner_review": false,
-        "require_last_push_approval": false,
-        "required_review_thread_resolution": false
-      } }
-  ]
-}
-JSON
-then
-    echo "warning: could not apply $BRANCH ruleset — no server-side merge gate" \
-         "on this repo (free plan private repos need GitHub Pro)" >&2
-fi
-
-echo "https://github.com/$OWNER/$name.git"   # plain remote URL only
-```
-
-Install:
-
-```bash
-sudo install -o root -g root -m 0755 devscaffold /usr/local/sbin/devscaffold
-```
-
-### `/etc/sudoers.d/devscaffold` (`0440`)
-
-The entire dev→ethan bridge — `dev` may run *only* this fixed program as ethan:
-
-```
-dev ALL=(ethan) NOPASSWD: /usr/local/sbin/devscaffold
-```
-
-`sudo`'s `env_reset` (default) strips dev-supplied `GIT_CONFIG`, `HOME`,
-`LD_PRELOAD`, `PATH`, etc.; the script re-asserts `HOME`/`PATH` regardless.
-Argument freedom is bounded by the script being fixed, arg-validated code that only
-creates repos — the same trust model as `devperms` trusting its path check.
-Validate after install with `sudo visudo -c`.
+Deployed to `/etc/sudoers.d/devscaffold` (`0440`); `install.sh` validates with
+`visudo -cf` before installing. The entire dev→ethan bridge is one rule —
+`dev ALL=(ethan) NOPASSWD: /usr/local/sbin/devscaffold`. `sudo`'s `env_reset`
+strips dev-supplied `GIT_CONFIG`/`HOME`/`LD_PRELOAD`/`PATH`; the script re-asserts
+`HOME`/`PATH` regardless. Argument freedom is bounded by the script being fixed,
+arg-validated code that only creates repos — the same trust model as `devperms`
+trusting its path check.
 
 ### Token scopes for `devscaffold`
 

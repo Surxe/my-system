@@ -1,0 +1,4 @@
+# Installed to /etc/sudoers.d/devscaffold (mode 0440, root:root).
+# The entire dev->ethan privilege bridge: dev may run ONLY this one fixed,
+# arg-validated program as ethan. See development/git-workflow.md.
+dev ALL=(ethan) NOPASSWD: /usr/local/sbin/devscaffold
