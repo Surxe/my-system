@@ -8,9 +8,10 @@
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
 #
-# Operator:
-#   run as ethan  -> deploys all three tiers (sudo used for root-tier).
-#   run as dev    -> deploys the dev-tier only (dev cannot/should not touch the rest).
+# Operator: must be run as ethan (or root). It deploys all three tiers, including
+# dev's CLAUDE.md (written via sudo -u dev). Refuses for any other user. (This
+# guard, plus sudo + ethan's private home, is the real boundary — file-exec perms
+# in this dev-writable repo are not, since dev could `bash install.sh` regardless.)
 #
 # SECURITY NOTE (deliberate trade-off): privileged files are deployed by COPY from
 # the local WORKING TREE, which is dev-writable. A local edit to an ethan/root file
@@ -29,18 +30,25 @@ ETHAN_HOME="$(getent passwd ethan | cut -d: -f6)"
 
 say(){ printf '%s\n' "$*"; }
 
-# --- review gate: privileged file must match approved origin/master, else prompt.
+# The ethan-approved baseline to diff privileged files against: the current
+# branch's upstream, else origin/HEAD's default branch, else a sane fallback.
+# (Works whether the repo's default branch is `main` or `master`.)
+BASE_REF="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+[ -n "$BASE_REF" ] || BASE_REF="$(git -C "$REPO_ROOT" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+[ -n "$BASE_REF" ] || BASE_REF="origin/master"
+
+# --- review gate: privileged file must match approved upstream, else prompt.
 review_gate() {   # $1 = repo-relative path
     local rel="$1"
     git -C "$REPO_ROOT" fetch -q origin 2>/dev/null || true
-    if git -C "$REPO_ROOT" rev-parse --verify -q origin/master >/dev/null; then
-        if git -C "$REPO_ROOT" diff --quiet origin/master -- "$rel"; then
-            return 0   # matches ethan-approved master — no prompt needed
+    if git -C "$REPO_ROOT" rev-parse --verify -q "$BASE_REF" >/dev/null; then
+        if git -C "$REPO_ROOT" diff --quiet "$BASE_REF" -- "$rel"; then
+            return 0   # matches ethan-approved upstream — no prompt needed
         fi
-        say "!! '$rel' DIFFERS from approved origin/master:"
-        git -C "$REPO_ROOT" --no-pager diff origin/master -- "$rel" || true
+        say "!! '$rel' DIFFERS from approved $BASE_REF:"
+        git -C "$REPO_ROOT" --no-pager diff "$BASE_REF" -- "$rel" || true
     else
-        say "!! no origin/master to compare against (repo not published yet): '$rel'"
+        say "!! no upstream ($BASE_REF) to compare against yet: '$rel'"
     fi
     local a; read -r -p "   install this privileged file anyway? [y/N] " a </dev/tty
     [ "$a" = y ] || [ "$a" = Y ]
@@ -100,13 +108,11 @@ case "$ME" in
         say "== deploy (operator: $ME) =="
         deploy_root_tier
         deploy_ethan_tier
-        deploy_dev_tier
-        ;;
-    dev)
-        say "== deploy dev-tier only (run as ethan for ethan/root tiers) =="
-        deploy_dev_tier
+        deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev
         ;;
     *)
-        say "unknown operator '$ME' — run as ethan (full) or dev (dev-tier)"; exit 1 ;;
+        say "install.sh must be run as ethan (it deploys privileged files)." >&2
+        say "current user: '$ME' — refusing." >&2
+        exit 1 ;;
 esac
 say "== done =="

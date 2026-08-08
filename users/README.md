@@ -18,8 +18,8 @@ users/
 ## Deploy
 
 ```bash
-./install.sh          # as ethan: root-tier (sudo) + ethan-tier + dev-tier
-./install.sh          # as dev:   dev-tier only
+./install.sh          # run as ethan: deploys root-tier (sudo) + ethan-tier + dev-tier
+                      # refuses for any other user (dev must ask ethan to deploy)
 ```
 
 ## Trust model (read before trusting this)
