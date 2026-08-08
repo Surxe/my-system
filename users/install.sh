@@ -2,6 +2,10 @@
 #
 # install.sh — deploy this repo's per-user + host config to their live locations.
 #
+# First runs the build phase (build.sh, as dev) to regenerate all per-user
+# artifacts (dev's CLAUDE.md, etc.), so a deploy always ships freshly-built
+# files. Then deploys the tiers below.
+#
 # Tiers, by trust level:
 #   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
@@ -54,10 +58,24 @@ review_gate() {   # $1 = repo-relative path
     [ "$a" = y ] || [ "$a" = Y ]
 }
 
+# --- build phase: regenerate all per-user artifacts (dev's CLAUDE.md, etc.) via
+#     users/build.sh. Run AS dev so generated files stay dev-owned (shared-file
+#     convention), and so a deploy always ships fresh artifacts, not stale ones. ---
+run_builders() {
+    local runner="$SCRIPT_DIR/build.sh"
+    [ -x "$runner" ] || { say "build: no executable $runner — skipping"; return; }
+    say "== build: regenerating users/ artifacts (build.sh) =="
+    if [ "$ME" = dev ]; then
+        "$runner"
+    else
+        sudo -u dev "$runner"
+    fi
+}
+
 # --- dev-tier: dev's own CLAUDE.md (copied, not symlinked — dev already controls it) ---
 deploy_dev_tier() {
     local src="$REPO_ROOT/users/dev/CLAUDE.md" dst="$DEV_HOME/.claude/CLAUDE.md"
-    [ -e "$src" ] || { say "dev-tier: no $src (run users/dev/build-claude-md.sh first)"; return; }
+    [ -e "$src" ] || { say "dev-tier: no $src (build phase / run.sh should have created it)"; return; }
     if [ "$ME" = dev ]; then
         install -D -m 0644 "$src" "$dst"
     else
@@ -106,6 +124,7 @@ deploy_root_tier() {
 case "$ME" in
     ethan|root)
         say "== deploy (operator: $ME) =="
+        run_builders             # regenerate artifacts before shipping them
         deploy_root_tier
         deploy_ethan_tier
         deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev

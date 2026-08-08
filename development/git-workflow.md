@@ -22,9 +22,14 @@ scopes — a classic PAT's scopes cannot express "no force-push" or "no merge".
   protection against the *account (actor)*, not the token. Two tokens of the same
   account are indistinguishable, so "dev can't merge but ethan can" is only
   possible with a distinct account.
-- **Merge gate:** rulesets on `master` require a PR + 1 approval. dev authors its
-  PRs as `Surxe-dev` and cannot approve its own PR, so only `ethan` (a different
-  actor) can approve — nothing merges without ethan's sign-off.
+- **Merge gate:** rulesets on the protected branch require a PR + 1 approval, but
+  the **Repository admin role bypasses it** (`bypass_actors: [{ RepositoryRole 5,
+  always }]`). `Surxe` (the owner) holds the admin role, so ethan can always merge
+  or push directly without an approval. `Surxe-dev` is only a **Write**
+  collaborator — it does *not* have the admin role, so it stays fully gated: its
+  PRs (authored as `Surxe-dev`, unapprovable by itself) need ethan's sign-off.
+  - This is role-based, so it holds regardless of whether the protected branch is
+    `main`, `master`, or `dev`.
   - Fully airtight "dev cannot click merge even after approval" additionally
     needs *Restrict who can push to matching branches → ethan only*, which on
     private personal repos requires **GitHub Pro**.
@@ -58,7 +63,13 @@ applies this automatically via `gh api` on a **best-effort** basis — see
 - Require approvals: 1
 - Block force pushes
 - Restrict deletions
-- Bypass list: empty (the dev account is **not** exempt)
+- Bypass list: **Repository admin role** (`actor_id 5`, `bypass_mode: always`).
+  This exempts `Surxe` (owner/admin) so ethan can always merge; `Surxe-dev` is a
+  Write collaborator, not admin, so it is **not** exempt and stays gated.
+
+To retrofit this bypass onto existing repos, run
+[`scripts/grant-admin-ruleset-bypass.sh`](../scripts/grant-admin-ruleset-bypass.sh)
+as ethan (dry-run by default; `--apply` to commit the change).
 
 ## Authentication
 
