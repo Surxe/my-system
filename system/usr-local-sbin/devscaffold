@@ -33,9 +33,20 @@ if gh repo view "$OWNER/$name" >/dev/null 2>&1; then
     echo "already exists on GitHub: $OWNER/$name" >&2; exit 1
 fi
 
-# 1. create empty remote (no branches yet)
+# 1. create empty remote (no branches yet), with the standard merge policy:
+#    squash-only, PR title/body as the squash commit text, auto-delete head
+#    branch on merge. (-F sends typed booleans; -f sends the exact enum strings.)
 priv=false; [ "$vis" = private ] && priv=true
-gh api -X POST /user/repos -f name="$name" -F private="$priv" >/dev/null
+gh api -X POST /user/repos \
+    -f name="$name" \
+    -F private="$priv" \
+    -F allow_squash_merge=true \
+    -F allow_merge_commit=false \
+    -F allow_rebase_merge=false \
+    -F delete_branch_on_merge=true \
+    -f squash_merge_commit_title=PR_TITLE \
+    -f squash_merge_commit_message=PR_BODY \
+    >/dev/null
 
 # 2. grant the dev automation account push (Write) access
 gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
