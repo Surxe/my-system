@@ -14,6 +14,7 @@ Deliberate, settled choices. When one changes, update the relevant domain file
 | **Proprietary NVIDIA** driver | RTX 5070 support; Secure Boot disabled to avoid signing |
 | **Secure Boot disabled** | Supports unsigned NVIDIA modules |
 | `ethan` / `dev` / `developers` model | Shared dev access under `/srv/dev` with setgid |
+| **Separate GitHub account for `dev`** (`Surxe-dev`) | Distinct actor so branch rulesets can block dev from merging/force-pushing while `ethan` can; classic `repo`-scope PAT in `~/.git-credentials`. See [../development/git-workflow.md](../development/git-workflow.md) |
 | `/srv/dev` workspace | repos / scratch / tools / docs |
 | **Restic → Backblaze B2** backups | Selective document-level, not full image |
 | **Steam + Proton GE** for gaming | GE-Proton11-3 |

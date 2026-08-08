@@ -17,12 +17,35 @@ and the two-identity git split in [git-workflow.md](git-workflow.md).
 | `devperms [dir]` | Fix shared perms on a repo via `sudo /usr/local/sbin/devperms` (defaults to `$PWD`). |
 | `devsafe_ethan [dir]` | Idempotently add `dir` to git `safe.directory` for **ethan** (`~/.gitconfig`). |
 | `devsafe_dev [dir]` | Same, but for **dev** — runs git as `sudo -u dev -H` so it writes `/home/dev/.gitconfig`. |
-| `devclone <profile>/<repo>` | `git clone git@…:<profile>/<repo>` into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh`. |
-| `devnew <repo>` | `mkdir` + `git init` under `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh`. |
+| `devclone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS, **dev** PAT) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh`. Repo must already exist on GitHub. |
+| `devnew <repo> [--public]` | Create the GitHub remote via `devscaffold` (as ethan), then local `git init -b master` + `remote add origin`, perms + both safe-dirs + `devsh`. |
 
 `devclone` / `devnew` refuse to clobber an existing destination and validate their
 argument shape (`devclone` needs a `profile/repo` slug; `devnew` rejects a slug
 with `/`).
+
+`devclone` now uses **HTTPS**, matching the classic-PAT `credential.helper store`
+auth policy in [git-workflow.md](git-workflow.md) (superseding the earlier
+`git@github.com` SSH URL). The clone runs as `dev` with the dev PAT — no ethan
+creds involved.
+
+### `devnew` → `devscaffold` (creating the GitHub remote)
+
+`devnew` no longer just `git init`s a bare local repo — it creates the matching
+remote under `Surxe`, grants `Surxe-dev` push access, and applies the `master`
+ruleset. Those account-side actions need **ethan's** PAT, so `devnew` calls the
+root-owned wrapper `/usr/local/sbin/devscaffold` via a narrow `sudo -u ethan` rule:
+
+```bash
+url="$(sudo -u ethan -H /usr/local/sbin/devscaffold "$reponame" "${2:-}")" || return 1
+git init -b master "$dest"
+git -C "$dest" remote add origin "$url"
+```
+
+The wrapper touches nothing under `/srv/dev`; everything local stays on the dev
+identity. Full script, sudoers rule, and rationale (including why an ambient
+`dev`-readable credential helper is the wrong model) live in
+[git-workflow.md → Programmatic repo scaffolding](git-workflow.md#programmatic-repo-scaffolding-devscaffold).
 
 ## Layout: `~/.bashrc.d/`
 
