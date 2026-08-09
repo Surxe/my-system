@@ -1,0 +1,10 @@
+[Desktop Entry]
+# source: my-system  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Deploy my-system config
+Comment=Deploy my-system per-user + host config to their live locations
+Exec=/srv/dev/repos/my-system/users/ethan/desktop-entries/deploy-my-system-config.run.sh
+Path=/srv/dev/repos/my-system/users
+Icon=/srv/dev/repos/my-system/users/ethan/desktop-entries/assets/run-build-install.svg
+Terminal=true
+Categories=Utility;
