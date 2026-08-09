@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: manual  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Claude Dev (split)
+Comment=Konsole split into tmux panes, each running devsh + Claude Code
+Exec=konsole -e /srv/dev/repos/my-system/users/ethan/bin/dev-cc-tmux
+Icon=/srv/dev/repos/my-system/users/ethan/desktop-entries/assets/claude.svg
+Terminal=false
+Categories=Utility;
