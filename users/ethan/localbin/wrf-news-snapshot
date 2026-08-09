@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# wrf-news-snapshot — desktop-launcher entry point for the WRF news snapshot.
+#
+# Runs AS ethan (the live KDE session user), but immediately hops to the `dev`
+# user to do the actual work: the snapshot code (scripts/snapshot.py) lives in
+# the dev-writable wrf-news-research repo, so it must NOT execute with ethan's
+# privileges — a dev-tree edit would otherwise run as ethan. `dev` running its
+# own repo's code is not an escalation. Only THIS thin launcher runs as ethan,
+# and it is a COPY in ethan's ~/.local/bin (deployed + review-gated by
+# my-system/users/install.sh), never the dev-writable repo tree. Same shape as
+# dev-cc: a copied ethan launcher that drops to dev via the devsh sudo bridge.
+#
+# Depends on: passwordless `sudo -u dev` for ethan (the devsh bridge) and
+# python3 on dev's PATH. Extra args pass through to snapshot.py
+# (e.g. --latest 5, --date 2026-08-08).
+set -uo pipefail
+
+# Do the snapshot as dev, inside the repo. `-H` gives dev's HOME; the inner `_`
+# is $0 so any launcher args land in "$@" for snapshot.py.
+sudo -u dev -H bash -c 'cd /srv/dev/repos/wrf-news-research && exec python3 scripts/snapshot.py "$@"' _ "$@"
+status=$?
+
+# Keep the terminal window open when launched from the desktop entry, so the
+# output stays readable. Skipped when not attached to a TTY.
+if [ -t 0 ]; then
+    echo
+    read -n1 -r -p "Done (exit $status). Press any key to close..."
+    echo
+fi
+exit "$status"

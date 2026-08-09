@@ -151,8 +151,11 @@ deploy_ethan_bin() {
 }
 
 # --- ethan-tier: desktop launchers -> ethan's app menu + desktop (privileged) ---
-# Each .desktop deploys to BOTH locations. Exec/Icon (and any *.run.sh runner)
-# stay in-repo, referenced by absolute path — only the .desktop is copied here.
+# Each .desktop deploys to BOTH locations; only the .desktop is copied here.
+# The Exec target for ethan-executed code must point at a DEPLOYED copy (e.g.
+# ~/.local/bin, populated by deploy_ethan_bin) — never at the dev-writable repo
+# tree, which would let a dev-tree edit run as ethan with no review gate. Only
+# assets (Icon SVGs) and cross-repo runners are referenced in place by design.
 deploy_desktop_entries() {
     local apps="$ETHAN_HOME/.local/share/applications" desk="$ETHAN_HOME/Desktop"
     local f base rel any=0

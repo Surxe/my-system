@@ -6,14 +6,22 @@
 # later by `users/install.sh` (run as ethan). See SKILL.md for the full flow.
 #
 # Model (why this is safe from an unprivileged dev):
-#   - Only the `.desktop` file is copied into ethan's home by install.sh.
-#   - Exec/Icon and any generated runner stay in-repo and are referenced by
-#     absolute path; ethan reads/execs them via the shared `developers` group.
+#   - The leaf executable that runs AS ethan must be either a root-owned system
+#     binary (/usr/bin/...) or a COPY in ethan's ~/.local/bin — never a path in
+#     the dev-writable repo tree. Otherwise a dev-tree edit would run as ethan on
+#     the next click with no review gate (the copy-not-reference rule).
+#   - So: the .desktop is copied into ethan's home by install.sh; any generated
+#     runner is written into users/ethan/localbin/ and ALSO copied (review-gated)
+#     into ~/.local/bin, with Exec pointing at that deployed copy.
+#   - A command that would exec a /srv/dev/repos path as ethan is REFUSED (move
+#     the executable into users/ethan/localbin/ first). Path= (cwd) and Icon=
+#     (assets) may stay in-repo — they are data, not code executed as ethan.
 #
-# Output (default --outdir): users/ethan/desktop-entries/
-#   <slug>.desktop           the launcher
-#   <slug>.run.sh            a pausing terminal runner (only for wrapped terminal
-#                            commands; keeps the window open to read output/errors)
+# Output:
+#   users/ethan/desktop-entries/<slug>.desktop   the launcher (copied to ethan's home)
+#   users/ethan/localbin/<slug>.run.sh           a pausing terminal runner (only for
+#                            wrapped terminal commands; keeps the window open to read
+#                            output/errors). Copied to ~/.local/bin by install.sh.
 #
 # Usage:
 #   make-shortcut.sh --command <cmd> [options]
@@ -34,13 +42,19 @@
 #   --source <text>     Provenance note for the header. Default: inferred repo
 #                       name from the command/workdir path, else "manual".
 #   --filename <slug>   Override the output basename (without extension).
-#   --outdir <dir>      Output directory. Default: the canonical desktop-entries/.
+#   --outdir <dir>      Output directory for the .desktop. Default: the canonical
+#                       desktop-entries/. (Generated runners always go to localbin/.)
+#   --allow-repo-exec   Escape hatch: permit a command that execs a /srv/dev/repos
+#                       path as ethan (a reference-in-place exec vector). Only for
+#                       deliberate, documented exceptions — warns loudly.
 #
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"   # …/users/dev/skills/add-shortcut
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"             # …/my-system
 DEFAULT_OUTDIR="$REPO_ROOT/users/ethan/desktop-entries"
+LOCALBIN_SRC="$REPO_ROOT/users/ethan/localbin"                # copied → ~ethan/.local/bin by install.sh
+ETHAN_LOCALBIN="/home/ethan/.local/bin"                       # its deploy target on the live system
 
 die(){ printf 'make-shortcut: %s\n' "$*" >&2; exit 1; }
 
@@ -56,6 +70,7 @@ categories="Utility"
 source_note=""
 filename=""
 outdir="$DEFAULT_OUTDIR"
+allow_repo_exec=false
 
 # --- parse args ---
 while [ $# -gt 0 ]; do
@@ -72,7 +87,8 @@ while [ $# -gt 0 ]; do
     --source)     source_note="${2:-}"; shift 2 ;;
     --filename)   filename="${2:-}"; shift 2 ;;
     --outdir)     outdir="${2:-}"; shift 2 ;;
-    -h|--help)    sed -n '2,45p' "$0"; exit 0 ;;
+    --allow-repo-exec) allow_repo_exec=true; shift ;;
+    -h|--help)    sed -n '2,52p' "$0"; exit 0 ;;
     *)            die "unknown argument: $1" ;;
   esac
 done
@@ -81,6 +97,29 @@ done
 
 # First whitespace-separated token of the command (used for name/workdir/source).
 first_token="${command_str%%[[:space:]]*}"
+
+# --- security gate: nothing under the dev-writable repo tree may execute AS ethan.
+# The leaf that runs must be a root-owned system binary or a COPY in ~/.local/bin
+# (deployed from users/ethan/localbin/). A launcher that execs a /srv/dev/repos
+# path — directly, or indirectly via a wrapper like `konsole -e /srv/.../script` —
+# would let a dev-tree edit run as ethan with no review gate: the exact hole the
+# copy-not-reference rule closes. Scan the whole command (not Path=/Icon: cwd and
+# assets are data, not code). Move such a target into users/ethan/localbin/<name>
+# and pass --command "$ETHAN_LOCALBIN/<name>" instead.
+case " $command_str " in
+  *"/srv/dev/repos/"*)
+    if [ "$allow_repo_exec" != true ]; then
+      die "refusing: this command would EXECUTE a path under /srv/dev/repos (dev-writable) as ethan.
+   That is a reference-in-place exec vector — a dev-tree edit would run as ethan with no review gate.
+   Fix: move the executable into  users/ethan/localbin/<name>  (install.sh copies it to
+   ~/.local/bin behind the review gate), then re-run with  --command '$ETHAN_LOCALBIN/<name> [args]'.
+   For a deliberate, documented exception (e.g. a cross-repo runner), pass --allow-repo-exec."
+    fi
+    printf 'make-shortcut: WARNING (--allow-repo-exec): command execs a dev-writable\n' >&2
+    printf '  /srv/dev/repos path as ethan; this is a reference-in-place exec vector.\n' >&2
+    printf '  Prefer relocating the executable into users/ethan/localbin/.\n' >&2
+    ;;
+esac
 
 # --- derive name ---
 if [ -z "$name" ]; then
@@ -126,12 +165,17 @@ desktop_path="$outdir/$filename.desktop"
 exec_line="$command_str"
 runner_path=""
 if [ "$terminal" = true ] && [ "$wrap" = true ]; then
-  runner_path="$outdir/$filename.run.sh"
+  # The runner itself executes AS ethan, so it must be a deployed COPY, not a
+  # repo-tree path: write it into localbin/ (install.sh copies it to ~/.local/bin
+  # behind the review gate) and point Exec at that deployed location.
+  mkdir -p "$LOCALBIN_SRC"
+  runner_path="$LOCALBIN_SRC/$filename.run.sh"
   cat > "$runner_path" <<RUNNER
 #!/usr/bin/env bash
 # GENERATED by /add-shortcut (make-shortcut.sh) — regenerate, don't hand-edit.
 # Runner for "$name": run the command, then pause so a terminal launch stays
-# readable (KDE closes the window on exit otherwise).
+# readable (KDE closes the window on exit otherwise). Deployed (COPIED, review-
+# gated) into ethan's ~/.local/bin by install.sh — never run from the repo tree.
 set -uo pipefail
 $command_str
 status=\$?
@@ -142,8 +186,8 @@ if [ -t 0 ]; then
 fi
 exit "\$status"
 RUNNER
-  chmod 0775 "$runner_path"
-  exec_line="$runner_path"
+  chmod 0755 "$runner_path"
+  exec_line="$ETHAN_LOCALBIN/$filename.run.sh"
 fi
 
 # --- write the .desktop ----------------------------------------------------
