@@ -104,6 +104,25 @@ deploy_dev_skills() {
     say "dev-tier: installed skills -> $dst"
 }
 
+# --- dev-tier: copy dev's own .bashrc.d modules into ~dev/.bashrc.d (dev's files) ---
+# No review gate: these are dev's OWN files (dev already controls its home), same
+# trust model as dev's CLAUDE.md/skills. Additive copy: refreshes/adds fragments;
+# does NOT prune fragments deleted from the repo. Dev's ~/.bashrc must source
+# ~/.bashrc.d/*.sh (one-time loader bootstrap; see users/dev/.bashrc.d/README.md).
+deploy_dev_bashrc() {
+    local src="$REPO_ROOT/users/dev/.bashrc.d" dst="$DEV_HOME/.bashrc.d" f
+    [ -d "$src" ] || { say "dev-bashrc: no $src — skipping"; return; }
+    for f in "$src"/*.sh; do
+        [ -e "$f" ] || continue
+        if [ "$ME" = dev ]; then
+            install -D -m 0644 "$f" "$dst/$(basename "$f")"
+        else
+            sudo -u dev install -D -m 0644 "$f" "$dst/$(basename "$f")"
+        fi
+        say "dev-tier: installed $dst/$(basename "$f")"
+    done
+}
+
 # --- ethan-tier: copy .bashrc.d modules into ethan's home (privileged) ---
 deploy_ethan_tier() {
     local d="$ETHAN_HOME/.bashrc.d" f base rel
@@ -213,6 +232,7 @@ case "$ME" in
         deploy_ethan_shortcuts   # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
         deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev
         deploy_dev_skills        # deploys dev's ~/.claude/skills via sudo -u dev
+        deploy_dev_bashrc        # deploys dev's ~/.bashrc.d fragments (cc alias) via sudo -u dev
         ;;
     *)
         say "install.sh must be run as ethan (it deploys privileged files)." >&2
