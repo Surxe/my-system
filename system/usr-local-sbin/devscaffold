@@ -51,31 +51,17 @@ gh api -X POST /user/repos \
 # 2. grant the dev automation account push (Write) access
 gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
 
-# 3. BEST-EFFORT ruleset: free-plan private repos return 403; warn + continue so
-#    the repo + collaborator still stand and no orphan is left behind.
-if ! gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1 <<JSON
-{
-  "name": "protect-$BRANCH",
-  "target": "branch",
-  "enforcement": "active",
-  "conditions": { "ref_name": { "include": ["refs/heads/$BRANCH"], "exclude": [] } },
-  "bypass_actors": [
-    { "actor_id": 5, "actor_type": "RepositoryRole", "bypass_mode": "always" }
-  ],
-  "rules": [
-    { "type": "deletion" },
-    { "type": "non_fast_forward" },
-    { "type": "pull_request",
-      "parameters": {
-        "required_approving_review_count": 1,
-        "dismiss_stale_reviews_on_push": false,
-        "require_code_owner_review": false,
-        "require_last_push_approval": false,
-        "required_review_thread_resolution": false
-      } }
-  ]
-}
-JSON
+# 3. BEST-EFFORT ruleset from the SHARED definition (same file protect-repo.sh
+#    uses, deployed by install.sh). Target this brand-new repo's default branch
+#    by name -- at creation ~DEFAULT_BRANCH isn't resolvable yet. free-plan
+#    private repos return 403; warn + continue so the repo + collaborator still
+#    stand and no orphan is left behind.
+RULESET_JSON=/usr/local/share/devscaffold/protect-core.json
+if [ ! -r "$RULESET_JSON" ]; then
+    echo "warning: $RULESET_JSON missing — no ruleset applied (run install.sh to" \
+         "deploy it); repo + collaborator still stand" >&2
+elif ! jq --arg r "refs/heads/$BRANCH" '.conditions.ref_name.include = [$r]' "$RULESET_JSON" \
+        | gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1
 then
     echo "warning: could not apply $BRANCH ruleset — no server-side merge gate" \
          "on this repo (free plan private repos need GitHub Pro)" >&2

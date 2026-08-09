@@ -219,6 +219,18 @@ deploy_root_tier() {
         fi
         rm -f "$tmp"
     done
+    # world-readable host data (e.g. the shared protect-core ruleset that both
+    # devscaffold and protect-repo.sh consume); mirrors the repo path under
+    # system/usr-local-share/ into /usr/local/share/ preserving subdirs.
+    if [ -d "$REPO_ROOT"/system/usr-local-share ]; then
+        while IFS= read -r -d '' f; do
+            rel="${f#"$REPO_ROOT"/}"                       # e.g. system/usr-local-share/devscaffold/x.json
+            dest="/usr/local/share/${rel#system/usr-local-share/}"
+            review_gate "$rel" || { say "   skipped $rel"; continue; }
+            sudo install -o root -g root -m 0644 -D "$f" "$dest"
+            say "root-tier: installed $dest"
+        done < <(find "$REPO_ROOT"/system/usr-local-share -type f -print0)
+    fi
 }
 
 case "$ME" in
