@@ -8,7 +8,11 @@
 #
 # Tiers, by trust level:
 #   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
+#               users/dev/skills/*       -> ~dev/.claude/skills/*      (copy; dev's own files)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
+#               users/ethan/desktop-entries/*.desktop
+#                                        -> ~ethan/.local/share/applications/*  (menu, 0644)
+#                                        +  ~ethan/Desktop/*                     (icon, 0755)
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
 #
@@ -84,6 +88,19 @@ deploy_dev_tier() {
     say "dev-tier: installed (copy) $dst"
 }
 
+# --- dev-tier: dev's own Claude skills -> ~dev/.claude/skills (dev's own files) ---
+deploy_dev_skills() {
+    local src="$REPO_ROOT/users/dev/skills" dst="$DEV_HOME/.claude/skills"
+    [ -d "$src" ] || { say "dev-skills: no $src — skipping"; return; }
+    # Additive copy: refreshes/adds skills; does NOT prune skills deleted from the repo.
+    if [ "$ME" = dev ]; then
+        mkdir -p "$dst"; cp -a "$src/." "$dst/"
+    else
+        sudo -u dev mkdir -p "$dst"; sudo -u dev cp -a "$src/." "$dst/"
+    fi
+    say "dev-tier: installed skills -> $dst"
+}
+
 # --- ethan-tier: copy .bashrc.d modules into ethan's home (privileged) ---
 deploy_ethan_tier() {
     local d="$ETHAN_HOME/.bashrc.d" f base rel
@@ -94,6 +111,30 @@ deploy_ethan_tier() {
         install -D -m 0644 "$f" "$d/$base"
         say "ethan-tier: installed $d/$base"
     done
+}
+
+# --- ethan-tier: desktop launchers -> ethan's app menu + desktop (privileged) ---
+# Each .desktop deploys to BOTH locations. Exec/Icon (and any *.run.sh runner)
+# stay in-repo, referenced by absolute path — only the .desktop is copied here.
+deploy_desktop_entries() {
+    local apps="$ETHAN_HOME/.local/share/applications" desk="$ETHAN_HOME/Desktop"
+    local f base rel any=0
+    for f in "$REPO_ROOT"/users/ethan/desktop-entries/*.desktop; do
+        [ -e "$f" ] || continue
+        any=1
+        base="$(basename "$f")"; rel="users/ethan/desktop-entries/$base"
+        review_gate "$rel" || { say "   skipped $base"; continue; }
+        install -D -m 0644 "$f" "$apps/$base"   # menu entry (no exec bit / trust needed)
+        install -D -m 0755 "$f" "$desk/$base"   # desktop icon (KDE needs the exec bit)
+        say "ethan-tier: installed $base -> menu + desktop"
+    done
+    [ "$any" = 1 ] || return
+    # Refresh KDE's menu cache so new entries appear without a re-login (best effort).
+    if [ "$ME" = ethan ]; then
+        kbuildsycoca6 >/dev/null 2>&1 || kbuildsycoca5 >/dev/null 2>&1 || true
+    else
+        sudo -u ethan kbuildsycoca6 >/dev/null 2>&1 || sudo -u ethan kbuildsycoca5 >/dev/null 2>&1 || true
+    fi
 }
 
 # --- root-tier: host scripts + sudoers drop-ins (need root) ---
@@ -127,7 +168,9 @@ case "$ME" in
         run_builders             # regenerate artifacts before shipping them
         deploy_root_tier
         deploy_ethan_tier
+        deploy_desktop_entries   # .desktop launchers -> ethan's menu + desktop
         deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev
+        deploy_dev_skills        # deploys dev's ~/.claude/skills via sudo -u dev
         ;;
     *)
         say "install.sh must be run as ethan (it deploys privileged files)." >&2
