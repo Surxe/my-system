@@ -95,3 +95,8 @@ Report the PR URL back to the user.
   stamp" rule applies to the PR body, not the commit trailer.
 - Committing the change into its own repo (e.g. `my-system`) follows that repo's
   git rules — commit only when asked.
+
+## After the PR merges
+
+Once the PR is complete/merged, remind Ethan to clean up locally: fetch, pull,
+delete the local feature branch, and switch back to the local default branch.
