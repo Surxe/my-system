@@ -9,8 +9,10 @@ users/
   install.sh        # deploys everything (run as ethan for all tiers; as dev for dev-tier)
   dev/              # dev-tier: dev's own config (moved from the old dev-user repo)
                     #   build-claude-md.sh assembles CLAUDE.md; install.sh copies it
+    skills/         #   dev's Claude skills -> ~dev/.claude/skills/ (e.g. add-shortcut)
   ethan/            # ethan-tier: files sourced by ethan's shell (run AS ethan)
     .bashrc.d/      #   devrepo/devaccept (40) + TODO 10/20/30 (see its README)
+    desktop-entries/ #  *.desktop launchers -> ethan's app menu + ~/Desktop (see /add-shortcut)
     .config/devscaffold/token.example   # real `token` is gitignored (secret)
 ../system/          # root-tier: installed to /usr/local/sbin + /etc/sudoers.d as root
 ```
@@ -32,8 +34,11 @@ edit landing in ethan/root on the next deploy. `install.sh` mitigates this with 
 not close the window — a deliberate trade-off (see
 [`../development/git-workflow.md`](../development/git-workflow.md)).
 
-- **dev-tier** files (dev's own, e.g. `CLAUDE.md`) are **copied** into dev's home —
-  no review gate (dev already controls its own home). Re-run `install.sh` after
-  rebuilding `CLAUDE.md` to refresh the deployed copy.
+- **dev-tier** files (dev's own, e.g. `CLAUDE.md`, and `dev/skills/*`) are
+  **copied** into dev's home — no review gate (dev already controls its own home).
+  Re-run `install.sh` after rebuilding `CLAUDE.md` or adding a skill to refresh
+  the deployed copy. (Skills copy is additive — it doesn't prune deleted skills.)
 - **ethan/root-tier** files are also **copied** (never symlinked from this
-  dev-writable tree) and pass the review gate first.
+  dev-writable tree) and pass the review gate first. `ethan/desktop-entries/*.desktop`
+  each deploy to **both** `~/.local/share/applications/` (menu) and `~/Desktop/`
+  (icon); their `Exec`/`Icon`/`*.run.sh` stay in-repo, referenced by absolute path.
