@@ -2,7 +2,7 @@
 
 - Repositories live under `/srv/dev/repos`.
 - Use branches; use pull requests where appropriate.
-- The default branch for repos is `master`.
+- The default branch for repos is `main`.
 - Claude may help create code and commits, but **avoid automatic destructive
   actions**. Commit / push only when asked.
 
@@ -16,7 +16,7 @@ scopes — a classic PAT's scopes cannot express "no force-push" or "no merge".
 | Identity | GitHub account | Token | Can | Cannot |
 | --- | --- | --- | --- | --- |
 | `ethan` (primary) | `Surxe` | classic PAT, wide scopes; stored in ethan's own home | everything, incl. approve + merge PRs, direct pushes | — |
-| `dev` (automation) | `Surxe-dev` (separate account, `Write` collaborator) | classic PAT, `repo` scope only; `~/.git-credentials` (chmod 600) | create branches, push feature branches, open/edit PRs | force-push `master`, delete `master`, **approve or merge PRs** |
+| `dev` (automation) | `Surxe-dev` (separate account, `Write` collaborator) | classic PAT, `repo` scope only; `~/.git-credentials` (chmod 600) | create branches, push feature branches, open/edit PRs | force-push `main`, delete `main`, **approve or merge PRs** |
 
 - **Why a second account, not just a second token:** GitHub evaluates branch
   protection against the *account (actor)*, not the token. Two tokens of the same
@@ -42,7 +42,7 @@ make this repository public"). Consequences:
 
 - **Public repos:** the ruleset applies, the merge gate above holds in full.
 - **Private repos:** **no server-side gate exists.** `Surxe-dev`'s `Write`
-  collaborator access is unconstrained — it can push directly to `master`, merge
+  collaborator access is unconstrained — it can push directly to `main`, merge
   its own PRs, force-push, and delete branches. The two-identity split degrades to
   *convention* here, not enforcement.
 
@@ -53,9 +53,9 @@ gate. On 403 `devscaffold` warns and continues so the repo + collaborator still 
 created (no orphan repos). Revisit via GitHub Pro or the fork model if enforced
 gating on private repos becomes necessary.
 
-## `master` ruleset (per repo)
+## `main` ruleset (per repo)
 
-Settings → Rules → Rulesets, target branch `master`. `devscaffold` (below)
+Settings → Rules → Rulesets, target branch `main`. `devscaffold` (below)
 applies this automatically via `gh api` on a **best-effort** basis — see
 "Merge gate on a free plan" above for why it silently no-ops on private repos:
 
@@ -128,7 +128,7 @@ Deployed to `/usr/local/sbin/devscaffold` (`root:root 0755`) by `install.sh`. As
 ethan it, in order: (1) creates the empty remote via REST `POST /user/repos`
 (**not** `gh repo create`, whose GraphQL `createRepository` needs full `repo` even
 for public repos); (2) grants `Surxe-dev` push access; (3) **best-effort** applies
-the `master` ruleset — on a free plan this 403s for private repos, so it warns and
+the `main` ruleset — on a free plan this 403s for private repos, so it warns and
 continues rather than abort (no orphan repos; see "Merge gate on a free plan"). It
 prints only the plain remote URL. Read the file for the exact code.
 

@@ -15,7 +15,7 @@ fi
 
 OWNER=Surxe
 DEVACCT=Surxe-dev
-BRANCH=master
+BRANCH=main
 
 usage(){ echo "usage: devscaffold <reponame> [--public]" >&2; exit 2; }
 
