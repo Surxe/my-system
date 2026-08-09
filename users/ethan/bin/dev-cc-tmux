@@ -1,0 +1,28 @@
+#!/usr/bin/env bash
+# dev-cc-tmux — open a tmux session split into N tiled panes, each running
+# `dev-cc` (devsh + cc). Meant to be launched inside a Konsole window:
+#
+#   konsole -e /srv/dev/repos/my-system/users/ethan/bin/dev-cc-tmux [N]
+#
+# Konsole's own layout format can't carry a per-pane command (it only stores
+# SessionRestoreId), so tmux does the splitting. Each pane runs dev-cc, which
+# ends in `exec bash`, so a pane stays alive as a dev shell after Claude exits.
+#
+# Runs AS ethan; dev-cc hops to the dev user via devsh/sudo. tmux runs on
+# ethan's default socket; the session name is PID-unique so repeated launches
+# don't collide.
+set -uo pipefail
+
+panes="${1:-3}"
+launcher="/srv/dev/repos/my-system/users/ethan/bin/dev-cc"
+session="dev-cc-$$"
+
+tmux new-session -d -s "$session" "$launcher"
+for ((i = 1; i < panes; i++)); do
+    tmux split-window -t "$session" "$launcher"
+    tmux select-layout -t "$session" tiled >/dev/null
+done
+tmux select-layout -t "$session" tiled >/dev/null
+tmux set-option -t "$session" mouse on          # click-to-focus + drag-resize
+tmux select-pane -t "$session".0
+exec tmux attach-session -t "$session"

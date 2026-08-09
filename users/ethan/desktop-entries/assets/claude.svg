@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- App-icon rendition of the Claude "burst" mark. Cream tile + terracotta
+       radial burst. Not an official asset; a hand-drawn approximation for a
+       personal desktop launcher. -->
+  <rect x="16" y="16" width="480" height="480" rx="112" ry="112" fill="#F0EEE6"/>
+  <g fill="#D97757">
+    <g id="burst" transform="translate(256,256)">
+      <!-- one leaf, pointing up, duplicated by rotation below -->
+      <g id="leaf-set">
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(30)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(60)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(90)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(120)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(150)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(180)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(210)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(240)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(270)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(300)"/>
+        <path d="M0 -188 C -12 -96, -12 -40, 0 0 C 12 -40, 12 -96, 0 -188 Z" transform="rotate(330)"/>
+      </g>
+    </g>
+  </g>
+</svg>
