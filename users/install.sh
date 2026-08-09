@@ -10,9 +10,12 @@
 #   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
 #               users/dev/skills/*       -> ~dev/.claude/skills/*      (copy; dev's own files)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
+#               users/ethan/localbin/*   -> ~ethan/.local/bin/*        (copy, 0755; on PATH)
 #               users/ethan/desktop-entries/*.desktop
 #                                        -> ~ethan/.local/share/applications/*  (menu, 0644)
 #                                        +  ~ethan/Desktop/*                     (icon, 0755)
+#               users/ethan/kde-global-shortcuts.conf
+#                                        -> ~ethan/.config/kglobalshortcutsrc   (per-key merge)
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
 #
@@ -113,6 +116,21 @@ deploy_ethan_tier() {
     done
 }
 
+# --- ethan-tier: copy PATH executables into ethan's ~/.local/bin (privileged) ---
+# For tools ethan runs directly (e.g. todo-capture). A COPY, never a symlink, so
+# dev-writable working-tree code never executes as ethan except by explicit,
+# review-gated deploy. ~/.local/bin is on ethan's PATH (Debian ~/.profile).
+deploy_ethan_bin() {
+    local d="$ETHAN_HOME/.local/bin" f base rel
+    for f in "$REPO_ROOT"/users/ethan/localbin/*; do
+        [ -e "$f" ] || continue
+        base="$(basename "$f")"; rel="users/ethan/localbin/$base"
+        review_gate "$rel" || { say "   skipped $base"; continue; }
+        install -D -m 0755 "$f" "$d/$base"
+        say "ethan-tier: installed $d/$base"
+    done
+}
+
 # --- ethan-tier: desktop launchers -> ethan's app menu + desktop (privileged) ---
 # Each .desktop deploys to BOTH locations. Exec/Icon (and any *.run.sh runner)
 # stay in-repo, referenced by absolute path — only the .desktop is copied here.
@@ -135,6 +153,28 @@ deploy_desktop_entries() {
     else
         sudo -u ethan kbuildsycoca6 >/dev/null 2>&1 || sudo -u ethan kbuildsycoca5 >/dev/null 2>&1 || true
     fi
+}
+
+# --- ethan-tier: assert declared KDE global shortcuts (privileged) ---
+# Writes ONLY the [services][<id>] _launch keys listed in the conf, via
+# kwriteconfig6 — merge-safe (every other shortcut untouched) and idempotent.
+# Binds keys to already-deployed .desktop launchers, so run AFTER those. Takes
+# effect on next login (a file write doesn't hot-reload kglobalaccel).
+deploy_ethan_shortcuts() {
+    local conf="$REPO_ROOT/users/ethan/kde-global-shortcuts.conf" id key
+    [ -f "$conf" ] || return
+    review_gate "users/ethan/kde-global-shortcuts.conf" || { say "   skipped kde-global-shortcuts"; return; }
+    while read -r id key; do
+        [ -n "$id" ] || continue
+        case "$id" in \#*) continue ;; esac
+        [ -n "$key" ] || continue
+        if [ "$ME" = ethan ]; then
+            kwriteconfig6 --file kglobalshortcutsrc --group services --group "$id" --key _launch "$key"
+        else
+            sudo -u ethan kwriteconfig6 --file kglobalshortcutsrc --group services --group "$id" --key _launch "$key"
+        fi
+        say "ethan-tier: shortcut $key -> $id"
+    done < "$conf"
 }
 
 # --- root-tier: host scripts + sudoers drop-ins (need root) ---
@@ -168,7 +208,9 @@ case "$ME" in
         run_builders             # regenerate artifacts before shipping them
         deploy_root_tier
         deploy_ethan_tier
+        deploy_ethan_bin         # PATH executables (todo-capture) -> ethan's ~/.local/bin
         deploy_desktop_entries   # .desktop launchers -> ethan's menu + desktop
+        deploy_ethan_shortcuts   # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
         deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev
         deploy_dev_skills        # deploys dev's ~/.claude/skills via sudo -u dev
         ;;
