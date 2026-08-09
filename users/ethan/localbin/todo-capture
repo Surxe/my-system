@@ -1,0 +1,76 @@
+#!/usr/bin/env bash
+#
+# todo-capture - quick, GUI-friendly capture into the shared todo store.
+#
+# Reviewed, ethan-facing companion to the dev `todo` tool. Deliberately
+# self-contained: it only APPENDS a raw record to the shared inbox (no model,
+# no dev-repo code, no secrets), so ethan never executes dev-writable code.
+# Enrichment (title/repo/type/tags) happens later, when dev runs `todo list`
+# or `todo classify`.
+#
+# Interoperates with /srv/dev/repos/todo/bin/todo by sharing the same store,
+# lock, and .seq counter. Keep the record shape and id scheme in sync with it.
+#
+# Usage:
+#   todo-capture <text…>      append text as a new todo
+#   todo-capture --dialog     kdialog single-field prompt, then append
+#   todo-capture --clipboard  append the current Wayland clipboard (wl-paste)
+set -euo pipefail
+
+TODO_DIR="${TODO_DIR:-/srv/dev/repos/todo}"
+INBOX="$TODO_DIR/inbox.jsonl"
+TODOS="$TODO_DIR/todos.jsonl"
+SEQ="$TODO_DIR/.seq"
+LOCK="$TODO_DIR/.lock"
+
+notify() { kdialog --passivepopup "$1" "${2:-3}" 2>/dev/null || true; }
+err()    { kdialog --error "$1" 2>/dev/null || printf 'todo-capture: %s\n' "$1" >&2; exit 1; }
+
+command -v jq >/dev/null 2>&1 || err "jq not found on PATH"
+[ -d "$TODO_DIR" ] || err "todo store not found: $TODO_DIR"
+
+# Append one raw record under the shared lock; echoes the new id. Mirrors
+# next_id/add in bin/todo (monotonic via .seq, never reuses a removed id).
+append_raw() {   # $1 = text
+    local text="$1" id created rec filemax seqval max n
+    (
+        flock 9
+        filemax=$(cat "$INBOX" "$TODOS" 2>/dev/null \
+            | jq -rs 'map(.id | ltrimstr("t-") | tonumber) | (max // 0)')
+        seqval=$(cat "$SEQ" 2>/dev/null || echo 0)
+        max=$(( filemax > seqval ? filemax : seqval )); n=$(( max + 1 ))
+        id=$(printf 't-%04d' "$n")
+        created=$(date -Iseconds)
+        rec=$(jq -cn --arg id "$id" --arg created "$created" --arg text "$text" \
+            '{id:$id, created:$created, text:$text, status:"raw"}')
+        printf '%s' "$n" > "$SEQ"
+        printf '%s\n' "$rec" >> "$INBOX"
+        # Best-effort local commit; harmless no-op if ethan has no git identity.
+        git -C "$TODO_DIR" add -A >/dev/null 2>&1 \
+            && git -C "$TODO_DIR" commit -q -m "add $id" >/dev/null 2>&1 || true
+        printf '%s\n' "$id"
+    ) 9>"$LOCK"
+}
+
+capture() {   # $1 = text
+    local text="$1" id
+    text="${text#"${text%%[![:space:]]*}"}"      # ltrim
+    text="${text%"${text##*[![:space:]]}"}"      # rtrim
+    [ -n "$text" ] || exit 0                      # empty -> silently do nothing
+    id=$(append_raw "$text")
+    notify "✓ captured $id"
+    printf '%s\n' "$id"
+}
+
+case "${1:-}" in
+    --dialog)
+        text=$(kdialog --title "New todo" --inputbox "Describe the todo:") || exit 0  # Cancel
+        capture "$text" ;;
+    --clipboard)
+        command -v wl-paste >/dev/null 2>&1 || err "wl-paste not found (install wl-clipboard)"
+        capture "$(wl-paste 2>/dev/null || true)" ;;
+    "")
+        err "usage: todo-capture <text…> | --dialog | --clipboard" ;;
+    *)
+        capture "$*" ;;
+esac

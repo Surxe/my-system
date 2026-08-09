@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: todo  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Todo: Quick Capture
+Comment=Prompt for a description and append it to the todo inbox
+Exec=/home/ethan/.local/bin/todo-capture --dialog
+Icon=list-add
+Terminal=false
+Categories=Utility;
