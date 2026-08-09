@@ -24,7 +24,7 @@ and the two-identity git split in [git-workflow.md](git-workflow.md).
 | `devperms [dir]` | Fix shared perms on a repo via `sudo /usr/local/sbin/devperms` (defaults to `$PWD`). |
 | `devsafe_ethan [dir]` | Idempotently add `dir` to git `safe.directory` for **ethan** (`~/.gitconfig`). |
 | `devsafe_dev [dir]` | Same, but for **dev** — runs git as `sudo -u dev -H` so it writes `/home/dev/.gitconfig`. |
-| `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b master` + `remote add origin`, perms + both safe-dirs + `devaccept` + `devsh`. |
+| `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b main` + `remote add origin` + empty initial commit + `push -u origin main` (seeds & connects `main` on both sides), perms + both safe-dirs + `devaccept` + `devsh`. |
 | `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devaccept` + `devsh`. Repo must already exist on GitHub. |
 | `devaccept` | As **dev**: accept any pending `Surxe-dev` repository-collaborator invitations, using the dev PAT from dev's credential store. Idempotent. |
 
@@ -50,15 +50,22 @@ creds involved.
 ### `devrepo new` → `devscaffold` (creating the GitHub remote)
 
 `devrepo new` doesn't just `git init` a bare local repo — it creates the matching
-remote under `Surxe`, grants `Surxe-dev` push access, and applies the `master`
+remote under `Surxe`, grants `Surxe-dev` push access, and applies the `main`
 ruleset. Those account-side actions need **ethan's** PAT, so it calls the
 root-owned wrapper `/usr/local/sbin/devscaffold` via a narrow `sudo -u ethan` rule:
 
 ```bash
 url="$(sudo -u ethan -H /usr/local/sbin/devscaffold "$reponame" "${2:-}")" || return 1
-git init -b master "$dest"
+git init -b main "$dest"
 git -C "$dest" remote add origin "$url"
+git -C "$dest" commit --allow-empty -m "Initial commit"
+GIT_TERMINAL_PROMPT=0 git -C "$dest" push -u origin main
 ```
+
+The empty initial commit gives the freshly-created (branchless) remote a `main`
+to receive; `push -u` makes local `main` track `origin/main`, and — since the
+push is the repo's first — sets `main` as GitHub's default branch. ethan owns the
+repo, so the admin bypass on the `main` ruleset lets this first direct push land.
 
 The wrapper touches nothing under `/srv/dev`; everything local stays on the dev
 identity. Full script, sudoers rule, and rationale (including why an ambient

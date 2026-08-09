@@ -53,8 +53,14 @@ devrepo() {
             fi
             [ -e "$dest" ] && { echo "already exists: $dest" >&2; return 1; }
             url="$(sudo -u ethan -H /usr/local/sbin/devscaffold "$reponame" "${2:-}")" || return 1
-            git init -b master "$dest"              || return 1
-            git -C "$dest" remote add origin "$url" || return 1
+            git init -b main "$dest"                                  || return 1
+            git -C "$dest" remote add origin "$url"                   || return 1
+            # seed the default branch on both sides and connect them: an empty
+            # initial commit gives the remote a `main` to receive, and `push -u`
+            # sets local main to track origin/main. (ethan owns the repo, so the
+            # admin bypass on the protection ruleset lets this direct push land.)
+            git -C "$dest" commit --allow-empty -m "Initial commit"   || return 1
+            GIT_TERMINAL_PROMPT=0 git -C "$dest" push -u origin main  || return 1
             ;;
         clone)
             slug="${1%.git}"
