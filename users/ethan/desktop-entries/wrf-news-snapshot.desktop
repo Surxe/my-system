@@ -3,8 +3,7 @@
 Type=Application
 Name=WRF News Snapshot
 Comment=Snapshot the War Robots: Frontiers news feed into data/<today>/
-Exec=/srv/dev/repos/wrf-news-research/scripts/run-snapshot.sh
-Path=/srv/dev/repos/wrf-news-research
+Exec=/home/ethan/.local/bin/wrf-news-snapshot
 Icon=/srv/dev/repos/wrf-news-research/assets/icon.svg
 Terminal=true
 Categories=Utility;

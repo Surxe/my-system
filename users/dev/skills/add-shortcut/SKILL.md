@@ -19,10 +19,19 @@ and app-launcher menu.
   write access to `~ethan`.** So you never place files in ethan's home yourself.
   You author the launcher inside this repo (dev-writable); `users/install.sh`
   (run by ethan) copies it into ethan's menu + desktop behind its review gate.
-- **Only the `.desktop` reaches ethan's home.** The `Exec`, `Icon`, and any
-  generated runner stay in-repo and are referenced by absolute path — ethan can
-  read/exec them via the shared `developers` group. Keep those paths absolute
-  and under `/srv/dev/repos`.
+- **Copy, don't reference, anything ethan EXECUTES (security invariant).** The
+  leaf that runs as ethan must be a root-owned system binary (`/usr/bin/…`) or a
+  **copy** in ethan's `~/.local/bin` — never a `/srv/dev/repos` path, which is
+  dev-writable and would let a dev-tree edit run as ethan with no review gate.
+  - Executables you author for a shortcut go in `users/ethan/localbin/`;
+    `install.sh` copies them (review-gated) to `~/.local/bin`, and you reference
+    the **deployed** path `/home/ethan/.local/bin/<name>` in `Exec`.
+  - The helper **refuses** a `--command` that would exec a `/srv/dev/repos` path
+    (directly or via `konsole -e …`); relocate the target into `localbin/` first.
+  - `Path=` (cwd) and `Icon=` (asset SVGs) may stay in-repo — they are data, not
+    code executed as ethan.
+- **What reaches ethan's home:** the `.desktop` (to the menu + desktop) and any
+  generated `.run.sh` runner (to `~/.local/bin`) — both as copies via `install.sh`.
 - **Canonical location:** all launchers live in
   `/srv/dev/repos/my-system/users/ethan/desktop-entries/`. One dir for every
   shortcut, regardless of which repo the command belongs to (Option A).
@@ -54,9 +63,17 @@ canonical dir and validates it:
 ```
 
 Notes:
+- **Local executables must be copied, not referenced.** If the shortcut runs a
+  script you control, place it in `users/ethan/localbin/<name>` and pass
+  `--command /home/ethan/.local/bin/<name>`. The helper refuses a `--command`
+  that execs a `/srv/dev/repos` path (see the security invariant above); the only
+  bypass is `--allow-repo-exec`, reserved for documented exceptions (e.g. a
+  cross-repo runner, or the deploy-my-system-config bootstrap).
 - For a **terminal** command, the helper also generates a `<slug>.run.sh` runner
   that runs the command then pauses (*"Press any key to close…"*) so output and
-  errors stay readable, and points `Exec=` at it.
+  errors stay readable, and points `Exec=` at it. The runner is written to
+  `users/ethan/localbin/` (not `desktop-entries/`) because it too executes as
+  ethan — so it is deployed as a copy into `~/.local/bin`.
 - Pass **`--no-wrap`** when the command already keeps its own terminal open
   (e.g. it ends with its own pause) — then `Exec=` points straight at it and no
   runner is generated.
@@ -84,13 +101,16 @@ desktop icon — click *Trust*/*Allow* once. (The menu entry needs no trust.)
 ## Step 4 — Commit
 
 `my-system` is version-controlled. Commit the new
-`users/ethan/desktop-entries/<slug>.desktop` (and `<slug>.run.sh` if generated).
-Commit only when the user asks, per the repo's git rules.
+`users/ethan/desktop-entries/<slug>.desktop` (and, if generated, the runner at
+`users/ethan/localbin/<slug>.run.sh`, plus any executable you added to
+`localbin/`). Commit only when the user asks, per the repo's git rules.
 
 ## Constraints
 
 - Do not write into `~ethan` or run `install.sh` yourself (you're `dev`; it
   refuses for non-ethan and the deploy is ethan's to run and review).
-- Keep `Exec`/`Icon` paths absolute and under `/srv/dev/repos` so ethan's KDE can
+- The `Exec` leaf must be a system binary or a `~/.local/bin` copy — never a
+  `/srv/dev/repos` path (the helper enforces this). `Icon`/`Path` may be absolute
+  in-repo paths (assets/cwd are data). Keep all paths absolute so ethan's KDE can
   reach them.
 - Never embed secrets in a command or launcher (see `CLAUDE.md` "Never access").

@@ -3,9 +3,9 @@
 # then drop to an interactive dev shell when Claude exits.
 #
 # Used as the per-pane command for the tmux split scaffold (see dev-cc-tmux).
-# Stays IN-REPO and is referenced by absolute path — same convention as the
-# desktop-entry runners (nothing to deploy for this file; it just needs its
-# exec bit).
+# Deployed (COPIED, review-gated) into ethan's ~/.local/bin by install.sh's
+# deploy_ethan_bin, and invoked from there — never from the dev-writable repo
+# working tree, so a dev-tree edit can't run as ethan without a review gate.
 #
 # Runs AS ethan. `devsh` (see .bashrc.d/10-devsh.sh) hops to the dev user via
 # sudo; `cc` is the Claude alias in dev's ~/.bashrc. We go through an interactive
