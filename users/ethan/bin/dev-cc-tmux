@@ -24,5 +24,14 @@ for ((i = 1; i < panes; i++)); do
 done
 tmux select-layout -t "$session" tiled >/dev/null
 tmux set-option -t "$session" mouse on          # click-to-focus + drag-resize
+# Bridge mouse selections to the system clipboard. With `mouse on`, tmux
+# captures drag-selections into its own buffer; without this they never reach
+# the clipboard. tmux runs AS ethan (who owns the Wayland compositor), so pipe
+# the selection straight to wl-copy — this crosses no user boundary and needs
+# no OSC 52 support from Konsole. (Shift+drag still bypasses tmux for a native
+# Konsole selection.)
+tmux set-option -t "$session" set-clipboard on
+tmux bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel wl-copy
+tmux bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel wl-copy
 tmux select-pane -t "$session".0
 exec tmux attach-session -t "$session"
