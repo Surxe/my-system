@@ -19,6 +19,9 @@ skills/
   [`../../ethan/desktop-entries/`](../../ethan/desktop-entries/) via
   `add-shortcut/make-shortcut.sh`; `install.sh` deploys it to ethan's menu +
   desktop.
+- **brainstorm** — divergent precursor to `/plan`. Given a feature idea, surfaces
+  adjacent ideas, pros/cons, and open questions in one sharp pass, ending with a
+  nudge to go deeper. Instructions-only (no helper script).
 
 ## Adding a skill
 
