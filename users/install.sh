@@ -9,6 +9,7 @@
 # Tiers, by trust level:
 #   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
 #               users/dev/skills/*       -> ~dev/.claude/skills/*      (copy; dev's own files)
+#               users/dev/memory/<proj>/* -> ~dev/.claude/projects/-<proj>/memory/* (copy; dev's own files)
 #               (cross-repo) todo/bin/todo -> ~dev/.local/bin/todo     (copy; dev's own home)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
 #               users/ethan/localbin/*   -> ~ethan/.local/bin/*        (copy, 0755; on PATH)
@@ -111,6 +112,28 @@ deploy_dev_skills() {
         sudo -u dev mkdir -p "$dst"; sudo -u dev cp -a "$src/." "$dst/"
     fi
     say "dev-tier: installed skills -> $dst"
+}
+
+# --- dev-tier: dev's own Claude memory -> ~dev/.claude/projects/-<proj>/memory ---
+# One subdir per Claude project under users/dev/memory/<proj>/; the live path
+# dash-encodes the project's absolute path, so <proj> is that path with '/'->'-'
+# and the leading dash dropped (srv-dev -> -srv-dev). Same trust model as dev's
+# skills (dev's OWN home — no review gate). Additive copy: refreshes/adds memory
+# files, does NOT prune ones deleted from the repo.
+deploy_dev_memory() {
+    local root="$REPO_ROOT/users/dev/memory" d name dst
+    [ -d "$root" ] || { say "dev-memory: no $root — skipping"; return; }
+    for d in "$root"/*/; do
+        [ -d "$d" ] || continue
+        name="$(basename "$d")"
+        dst="$DEV_HOME/.claude/projects/-$name/memory"
+        if [ "$ME" = dev ]; then
+            mkdir -p "$dst"; cp -a "$d." "$dst/"
+        else
+            sudo -u dev mkdir -p "$dst"; sudo -u dev cp -a "$d." "$dst/"
+        fi
+        say "dev-tier: installed memory ($name) -> $dst"
+    done
 }
 
 # --- dev-tier: copy dev's own .bashrc.d modules into ~dev/.bashrc.d (dev's files) ---
@@ -350,6 +373,7 @@ case "$ME" in
         deploy_ethan_shortcuts   # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
         deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev
         deploy_dev_skills        # deploys dev's ~/.claude/skills via sudo -u dev
+        deploy_dev_memory        # deploys dev's ~/.claude Claude memory via sudo -u dev
         deploy_dev_bashrc        # deploys dev's ~/.bashrc.d fragments (cc alias) via sudo -u dev
         deploy_dev_statusline    # deploys dev's ~/.claude status line + wires settings.json
         deploy_todo_dev          # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
