@@ -9,8 +9,10 @@
 # Tiers, by trust level:
 #   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
 #               users/dev/skills/*       -> ~dev/.claude/skills/*      (copy; dev's own files)
+#               (cross-repo) todo/bin/todo -> ~dev/.local/bin/todo     (copy; dev's own home)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
 #               users/ethan/localbin/*   -> ~ethan/.local/bin/*        (copy, 0755; on PATH)
+#               (cross-repo) todo/bin/todo -> ~ethan/.local/bin/todo   (copy, 0755; gated vs todo's origin/master)
 #               users/ethan/desktop-entries/*.desktop
 #                                        -> ~ethan/.local/share/applications/*  (menu, 0644)
 #                                        +  ~ethan/Desktop/*                     (icon, 0755)
@@ -48,21 +50,27 @@ BASE_REF="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u
 [ -n "$BASE_REF" ] || BASE_REF="$(git -C "$REPO_ROOT" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
 [ -n "$BASE_REF" ] || BASE_REF="origin/master"
 
-# --- review gate: privileged file must match approved upstream, else prompt.
-review_gate() {   # $1 = repo-relative path
-    local rel="$1"
-    git -C "$REPO_ROOT" fetch -q origin 2>/dev/null || true
-    if git -C "$REPO_ROOT" rev-parse --verify -q "$BASE_REF" >/dev/null; then
-        if git -C "$REPO_ROOT" diff --quiet "$BASE_REF" -- "$rel"; then
+# --- review gate: a privileged file must match its repo's approved upstream,
+#     else prompt. review_gate_in() is generic over the repo (used for the
+#     cross-repo todo bin); review_gate() binds it to THIS repo. ---
+review_gate_in() {   # $1 = repo root, $2 = base ref, $3 = repo-relative path
+    local root="$1" base="$2" rel="$3"
+    git -C "$root" fetch -q origin 2>/dev/null || true
+    if git -C "$root" rev-parse --verify -q "$base" >/dev/null; then
+        if git -C "$root" diff --quiet "$base" -- "$rel"; then
             return 0   # matches ethan-approved upstream — no prompt needed
         fi
-        say "!! '$rel' DIFFERS from approved $BASE_REF:"
-        git -C "$REPO_ROOT" --no-pager diff "$BASE_REF" -- "$rel" || true
+        say "!! '$rel' ($root) DIFFERS from approved $base:"
+        git -C "$root" --no-pager diff "$base" -- "$rel" || true
     else
-        say "!! no upstream ($BASE_REF) to compare against yet: '$rel'"
+        say "!! no upstream ($base) to compare against yet: '$rel' ($root)"
     fi
     local a; read -r -p "   install this privileged file anyway? [y/N] " a </dev/tty
     [ "$a" = y ] || [ "$a" = Y ]
+}
+
+review_gate() {   # $1 = THIS repo's relative path
+    review_gate_in "$REPO_ROOT" "$BASE_REF" "$1"
 }
 
 # --- build phase: regenerate all per-user artifacts (dev's CLAUDE.md, etc.) via
@@ -163,6 +171,36 @@ PY
     else
         say "!! dev-tier: statusline self-test FAILED — check $dst"
     fi
+}
+
+# --- todo tool: deploy the shared `todo` CLI onto each user's PATH ---
+# The tool lives in its OWN repo (below); its store is shared (group
+# `developers`, group-writable) and bin/todo is generic — the one dev-only
+# command, `classify`, self-guards — so the same bin serves both users. Deployed
+# as a COPY (never a symlink into the dev-writable tree). For ethan it is
+# review-gated against the TODO repo's own approved upstream (cross-repo gate).
+TODO_REPO="/srv/dev/repos/todo"
+TODO_BIN="$TODO_REPO/bin/todo"
+TODO_BASE_REF="$(git -C "$TODO_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/master)"
+
+# dev-tier: dev's own copy (dev controls its home — no gate).
+deploy_todo_dev() {
+    [ -e "$TODO_BIN" ] || { say "todo-dev: no $TODO_BIN — skipping"; return; }
+    if [ "$ME" = dev ]; then
+        install -D -m 0755 "$TODO_BIN" "$DEV_HOME/.local/bin/todo"
+    else
+        sudo -u dev install -D -m 0755 "$TODO_BIN" "$DEV_HOME/.local/bin/todo"
+    fi
+    say "dev-tier: installed $DEV_HOME/.local/bin/todo"
+}
+
+# ethan-tier: reviewed copy of the cross-repo todo bin -> ethan's ~/.local/bin
+# (privileged). todo-capture delegates to this deployed `todo`, so deploy it first.
+deploy_todo_ethan() {
+    [ -e "$TODO_BIN" ] || { say "todo-ethan: no $TODO_BIN — skipping"; return; }
+    review_gate_in "$TODO_REPO" "$TODO_BASE_REF" "bin/todo" || { say "   skipped todo"; return; }
+    install -D -m 0755 "$TODO_BIN" "$ETHAN_HOME/.local/bin/todo"
+    say "ethan-tier: installed $ETHAN_HOME/.local/bin/todo"
 }
 
 # --- ethan-tier: copy .bashrc.d modules into ethan's home (privileged) ---
@@ -284,6 +322,7 @@ case "$ME" in
         run_builders             # regenerate artifacts before shipping them
         deploy_root_tier
         deploy_ethan_tier
+        deploy_todo_ethan        # reviewed copy of todo/bin/todo -> ethan's ~/.local/bin (before todo-capture)
         deploy_ethan_bin         # PATH executables (todo-capture) -> ethan's ~/.local/bin
         deploy_desktop_entries   # .desktop launchers -> ethan's menu + desktop
         deploy_ethan_shortcuts   # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
@@ -291,6 +330,7 @@ case "$ME" in
         deploy_dev_skills        # deploys dev's ~/.claude/skills via sudo -u dev
         deploy_dev_bashrc        # deploys dev's ~/.bashrc.d fragments (cc alias) via sudo -u dev
         deploy_dev_statusline    # deploys dev's ~/.claude status line + wires settings.json
+        deploy_todo_dev          # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
         ;;
     *)
         say "install.sh must be run as ethan (it deploys privileged files)." >&2

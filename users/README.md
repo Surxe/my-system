@@ -42,3 +42,9 @@ not close the window — a deliberate trade-off (see
   dev-writable tree) and pass the review gate first. `ethan/desktop-entries/*.desktop`
   each deploy to **both** `~/.local/share/applications/` (menu) and `~/Desktop/`
   (icon); their `Exec`/`Icon`/`*.run.sh` stay in-repo, referenced by absolute path.
+- **cross-repo `todo`**: `install.sh` also deploys the `todo` CLI from its own
+  repo (`/srv/dev/repos/todo/bin/todo`) onto both users' PATHs — a copy into
+  dev's `~/.local/bin` (no gate) and a copy into ethan's (review-gated against
+  the *todo* repo's `origin/master`, via `review_gate_in`). The store is shared
+  and `bin/todo` is generic; only its `classify` command is dev-only (self-guards).
+  This is why the todo repo carries no install.sh of its own.
