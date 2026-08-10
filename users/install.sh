@@ -16,6 +16,7 @@
 #               users/ethan/desktop-entries/*.desktop
 #                                        -> ~ethan/.local/share/applications/*  (menu, 0644)
 #                                        +  ~ethan/Desktop/*                     (icon, 0755)
+#               users/ethan/.config/**   -> ~ethan/.config/**          (copy 0644; e.g. fastfetch)
 #               users/ethan/kde-global-shortcuts.conf
 #                                        -> ~ethan/.config/kglobalshortcutsrc   (per-key merge)
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
@@ -230,6 +231,26 @@ deploy_ethan_bin() {
     done
 }
 
+# --- ethan-tier: mirror declared ~/.config trees into ethan's home (privileged) ---
+# For plain per-user config (e.g. fastfetch/config.jsonc). Copied 0644 (data, no
+# exec bit) from the dev-writable tree, so each file is review-gated like every
+# other ethan-tier file. Walks users/ethan/.config/** and mirrors the path under
+# it into ~ethan/.config/**, preserving subdirs; additive (never prunes files
+# ethan has but the repo doesn't). Skips *.example (tracked placeholders, e.g.
+# devscaffold/token.example) which are not live config.
+deploy_ethan_config() {
+    local root="$REPO_ROOT/users/ethan/.config" f rel dest
+    [ -d "$root" ] || return
+    while IFS= read -r -d '' f; do
+        case "$f" in *.example) continue ;; esac
+        rel="users/ethan/.config/${f#"$root"/}"          # repo-relative, for the gate
+        dest="$ETHAN_HOME/.config/${f#"$root"/}"         # live target, subdirs preserved
+        review_gate "$rel" || { say "   skipped ${f#"$root"/}"; continue; }
+        install -D -m 0644 "$f" "$dest"
+        say "ethan-tier: installed $dest"
+    done < <(find "$root" -type f -print0)
+}
+
 # --- ethan-tier: desktop launchers -> ethan's app menu + desktop (privileged) ---
 # Each .desktop deploys to BOTH locations; only the .desktop is copied here.
 # The Exec target for ethan-executed code must point at a DEPLOYED copy (e.g.
@@ -324,6 +345,7 @@ case "$ME" in
         deploy_ethan_tier
         deploy_todo_ethan        # reviewed copy of todo/bin/todo -> ethan's ~/.local/bin (before todo-capture)
         deploy_ethan_bin         # PATH executables (todo-capture) -> ethan's ~/.local/bin
+        deploy_ethan_config      # ~/.config trees (fastfetch, ...) -> ethan's ~/.config
         deploy_desktop_entries   # .desktop launchers -> ethan's menu + desktop
         deploy_ethan_shortcuts   # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
         deploy_dev_tier          # deploys dev's CLAUDE.md via sudo -u dev
