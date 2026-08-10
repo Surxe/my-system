@@ -17,3 +17,7 @@ private/encrypted-notes/
 # devscaffold PAT — the *.example is tracked; the real token file never is.
 **/devscaffold/token
 *.token
+
+# Regenerable derived state: the repo-description SHA->description cache
+# (generate-repo-descriptions.sh). Repopulated on any run; never committed.
+users/dev/.cache/
