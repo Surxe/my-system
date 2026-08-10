@@ -2,14 +2,12 @@
 #
 # todo-capture - quick, GUI-friendly capture into the shared todo store.
 #
-# Reviewed, ethan-facing companion to the dev `todo` tool. Deliberately
-# self-contained: it only APPENDS a raw record to the shared inbox (no model,
-# no dev-repo code, no secrets), so ethan never executes dev-writable code.
-# Enrichment (title/repo/type/tags) happens later, when dev runs `todo list`
-# or `todo classify`.
-#
-# Interoperates with /srv/dev/repos/todo/bin/todo by sharing the same store,
-# lock, and .seq counter. Keep the record shape and id scheme in sync with it.
+# Thin GUI front-end for `todo add`. It only prompts (kdialog / clipboard) and
+# then delegates the actual append to the deployed `todo` command in ethan's
+# ~/.local/bin — a reviewed COPY of bin/todo (deployed by this repo's
+# users/install.sh deploy_todo_ethan), not dev-repo code, so ethan still never
+# executes the dev-writable tree. All store logic (id scheme, .seq, locking,
+# perms) now lives in exactly one place, bin/todo; this no longer duplicates it.
 #
 # Usage:
 #   todo-capture <text…>      append text as a new todo
@@ -17,53 +15,23 @@
 #   todo-capture --clipboard  append the current Wayland clipboard (wl-paste)
 set -euo pipefail
 
-TODO_DIR="${TODO_DIR:-/srv/dev/repos/todo}"
-INBOX="$TODO_DIR/inbox.jsonl"
-TODOS="$TODO_DIR/todos.jsonl"
-SEQ="$TODO_DIR/.seq"
-LOCK="$TODO_DIR/.lock"
-
 notify() { kdialog --passivepopup "$1" "${2:-3}" 2>/dev/null || true; }
 err()    { kdialog --error "$1" 2>/dev/null || printf 'todo-capture: %s\n' "$1" >&2; exit 1; }
 
-command -v jq >/dev/null 2>&1 || err "jq not found on PATH"
-[ -d "$TODO_DIR" ] || err "todo store not found: $TODO_DIR"
-
-# Append one raw record under the shared lock; echoes the new id. Mirrors
-# next_id/add in bin/todo (monotonic via .seq, never reuses a removed id).
-append_raw() {   # $1 = text
-    local text="$1" id created rec filemax seqval max n
-    (
-        flock 9
-        filemax=$(cat "$INBOX" "$TODOS" 2>/dev/null \
-            | jq -rs 'map(.id | ltrimstr("t-") | tonumber) | (max // 0)')
-        seqval=$(cat "$SEQ" 2>/dev/null || echo 0)
-        max=$(( filemax > seqval ? filemax : seqval )); n=$(( max + 1 ))
-        id=$(printf 't-%04d' "$n")
-        created=$(date -Iseconds)
-        rec=$(jq -cn --arg id "$id" --arg created "$created" --arg text "$text" \
-            '{id:$id, created:$created, text:$text, status:"raw"}')
-        # Record lands first. If the inbox append fails (e.g. a perms drift on
-        # the shared store), `set -e` aborts here and .seq is left untouched — so
-        # a failed capture never silently burns an id. Advance the counter only
-        # after the record is safely written.
-        printf '%s\n' "$rec" >> "$INBOX"
-        printf '%s' "$n" > "$SEQ"
-        # Best-effort local commit; harmless no-op if ethan has no git identity.
-        git -C "$TODO_DIR" add -A >/dev/null 2>&1 \
-            && git -C "$TODO_DIR" commit -q -m "add $id" >/dev/null 2>&1 || true
-        printf '%s\n' "$id"
-    ) 9>"$LOCK"
-}
+# Requires the deployed `todo` (my-system users/install.sh, run as ethan). Fail
+# clearly if it isn't on PATH yet rather than silently dropping the capture.
+command -v todo >/dev/null 2>&1 || err "todo not found on PATH (deploy it: run my-system users/install.sh as ethan)"
 
 capture() {   # $1 = text
-    local text="$1" id
+    local text="$1" out id
     text="${text#"${text%%[![:space:]]*}"}"      # ltrim
     text="${text%"${text##*[![:space:]]}"}"      # rtrim
     [ -n "$text" ] || exit 0                      # empty -> silently do nothing
-    id=$(append_raw "$text")
-    notify "✓ captured $id"
-    printf '%s\n' "$id"
+    # Delegate to the single source of truth. `todo add` prints "✓ todo <id> captured".
+    out=$(todo add "$text") || err "todo add failed"
+    id=$(printf '%s' "$out" | grep -oE 't-[0-9]+' | head -n1)
+    notify "✓ captured ${id:-todo}"
+    printf '%s\n' "${id:-$out}"
 }
 
 case "${1:-}" in
