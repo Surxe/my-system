@@ -23,7 +23,7 @@ import sys
 if hasattr(sys.stdout, "buffer"):
     sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
 
-SEP = "  \x1b[2m·\x1b[0m  "  # dim middle dot between segments
+SEP = " \x1b[2m·\x1b[0m "  # dim middle dot between segments
 
 _ANSI = {
     "reset": "\x1b[0m",
