@@ -1,8 +1,8 @@
 ---
 name: pr
 description: >-
-  Open a GitHub pull request from this workstation as the dev user. Handles the
-  gh-as-dev auth quirk (token from the git credential store), creates a feature
+  Open a GitHub pull request from this workstation as the dev user. gh is
+  persistently authenticated for dev, so it just works; creates a feature
   branch when on main/master/dev, commits outstanding work, and opens a
   non-automerge PR with a brief description. Use whenever the user wants to open
   or create a PR / pull request, or runs /pr.
@@ -14,19 +14,19 @@ Lightweight PR flow for this box. It is deliberately thin: no enforced review
 policy, no mandated PR format. A review of the change is assumed to have already
 happened — this skill just gets the change onto a branch and into a PR.
 
-## Auth — read first (the core reason this skill exists)
+## Auth
 
-Claude runs as `dev`, and `gh` is **not** authenticated for dev (`gh auth login`
-will fail, `GH_TOKEN` is unset). Every `gh` call must carry a token pulled from
-the git credential store — the same source `devaccept` uses:
+`gh` is persistently authenticated for `dev` as `Surxe-dev` (via
+`~/.config/gh/hosts.yml`), so just call `gh` directly — no `GH_TOKEN`, no
+`git credential fill`. If a `gh` call ever fails with an auth error, the login
+has been lost; re-persist it from the token in the git credential store:
 
 ```
-tok=$(printf 'protocol=https\nhost=github.com\n\n' | git credential fill 2>/dev/null | sed -n 's/^password=//p')
-GH_TOKEN="$tok" gh pr create ...
+tok=$(sed -n 's#.*://[^:]*:\([^@]*\)@.*#\1#p' ~/.git-credentials)
+printf '%s' "$tok" | gh auth login --with-token
 ```
 
-Fetch the token once and reuse it for the run. If it comes back empty, stop and
-tell the user — there is no dev token in the credential store to PR with.
+If that token is empty or the login still fails, stop and tell the user.
 
 ## Step 1 — Check the branch
 
@@ -61,8 +61,7 @@ for the user).
 - **Already on a feature branch:** just commit any remaining changes onto the
   existing series.
 
-Then `git push -u origin <branch>` (with the token exported as above if the push
-needs it).
+Then `git push -u origin <branch>` (the `store` credential helper handles auth).
 
 ## Step 4 — Verification gate before the PR
 
@@ -77,7 +76,7 @@ explicitly asks for one.
 ## Step 5 — Create the PR
 
 ```
-GH_TOKEN="$tok" gh pr create --title '<title>' --body '<body>'
+gh pr create --title '<title>' --body '<body>'
 ```
 
 - Let `gh` auto-detect the base branch — no need to compute main-vs-master.
