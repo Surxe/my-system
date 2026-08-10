@@ -26,6 +26,29 @@ REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUT_FILE="${OUT_FILE:-$REPO_ROOT/sections/repo-descriptions.md}"
 API="https://api.github.com"
 
+# --- description cache -----------------------------------------------------
+# The GitHub description rarely changes, so we avoid an API round-trip per repo
+# by caching each slug's description keyed on the local HEAD SHA. On a run we
+# read the SHA locally (free) and only call the API when the SHA changed since
+# we last cached it. Because a description CAN change on GitHub without a new
+# commit, a cache entry older than CACHE_TTL_DAYS is refreshed regardless, and
+# --force bypasses the cache entirely. Cache is regenerable derived state, kept
+# out of git (see .gitignore) — a fresh checkout just repopulates it.
+CACHE_FILE="${CACHE_FILE:-$REPO_ROOT/.cache/repo-descriptions.json}"
+CACHE_TTL_DAYS="${CACHE_TTL_DAYS:-14}"
+
+FORCE=0
+for arg in "$@"; do
+  case "$arg" in
+    -f|--force) FORCE=1 ;;
+    -h|--help)
+      echo "usage: $(basename "$0") [--force]"
+      echo "  --force  ignore the description cache and re-fetch every repo"
+      exit 0 ;;
+    *) echo "unknown argument: $arg" >&2; exit 2 ;;
+  esac
+done
+
 # --- token -----------------------------------------------------------------
 # Pull the PAT from the git credential helper once. Sending it on every call
 # also lifts us off the low unauthenticated API rate limit. Empty if none.
@@ -54,29 +77,49 @@ slug_from_url() {
 }
 
 # owner/repo -> description text, or a parenthetical status marker.
+#
+# Sets two globals rather than only printing, so the caller can tell a
+# definitive answer (safe to cache) from a transient failure (reuse the old
+# cached value instead of poisoning the cache with an error):
+#   FETCH_TEXT  the description or status marker
+#   FETCH_OK    1 = definitive (200/404), 0 = transient (network/auth/5xx)
 fetch_description() {
   local slug="$1" resp http body desc
+  FETCH_OK=0
   resp="$(curl -sS -w $'\n%{http_code}' \
       "${AUTH_ARGS[@]}" \
       -H "Accept: application/vnd.github+json" \
       -H "X-GitHub-Api-Version: 2022-11-28" \
-      "$API/repos/$slug" 2>/dev/null)" || { printf '(error contacting GitHub)'; return; }
+      "$API/repos/$slug" 2>/dev/null)" || { FETCH_TEXT='(error contacting GitHub)'; return; }
   http="${resp##*$'\n'}"
   body="${resp%$'\n'*}"
   case "$http" in
     200)
       desc="$(printf '%s' "$body" | jq -r '.description // ""')"
-      [ -n "$desc" ] && printf '%s' "$desc" || printf '(no description set)'
+      [ -n "$desc" ] && FETCH_TEXT="$desc" || FETCH_TEXT='(no description set)'
+      FETCH_OK=1
       ;;
-    404)     printf '(not found or dev lacks access)' ;;
-    401|403) printf '(unauthorized — check dev PAT)' ;;
-    *)       printf '(HTTP %s)' "$http" ;;
+    404)     FETCH_TEXT='(not found or dev lacks access)'; FETCH_OK=1 ;;
+    401|403) FETCH_TEXT='(unauthorized — check dev PAT)' ;;
+    *)       FETCH_TEXT="(HTTP $http)" ;;
   esac
 }
 
 # --- build -----------------------------------------------------------------
 tracked=""   # lines for GitHub-backed repos
 local_only="" # lines for repos with no GitHub remote
+
+# Load the existing cache (best effort — a missing or corrupt file is just a
+# cold cache). NEW_CACHE is rebuilt from scratch so slugs for removed repos
+# age out automatically.
+OLD_CACHE='{}'
+if [ -f "$CACHE_FILE" ]; then
+  OLD_CACHE="$(jq -e . "$CACHE_FILE" 2>/dev/null || echo '{}')"
+fi
+NEW_CACHE='{}'
+NOW="$(date +%s)"
+TTL_SECS=$(( CACHE_TTL_DAYS * 86400 ))
+hits=0 misses=0
 
 for dir in "$REPOS_DIR"/*/; do
   [ -d "$dir" ] || continue
@@ -90,11 +133,57 @@ for dir in "$REPOS_DIR"/*/; do
     continue
   fi
 
-  if slug="$(slug_from_url "$url")"; then
-    desc="$(fetch_description "$slug")"
-    tracked+="- **$name** — \`$path\` (\`$slug\`) — $desc"$'\n'
-  else
+  if ! slug="$(slug_from_url "$url")"; then
     tracked+="- **$name** — \`$path\` (\`$url\`) — (non-GitHub remote)"$'\n'
+    continue
+  fi
+
+  # Local HEAD SHA is the cache key (read locally, no API cost). Empty for a
+  # repo with no commits — then we can't SHA-gate, so we always fetch.
+  sha="$(git -C "$dir" rev-parse HEAD 2>/dev/null || true)"
+
+  # Pull any prior cache entry for this slug.
+  c_sha="$(printf '%s' "$OLD_CACHE"  | jq -r --arg s "$slug" '.[$s].sha         // empty')"
+  c_desc="$(printf '%s' "$OLD_CACHE" | jq -r --arg s "$slug" '.[$s].description // empty')"
+  c_ts="$(printf '%s' "$OLD_CACHE"   | jq -r --arg s "$slug" '.[$s].fetched     // 0')"
+
+  # Decide the description and exactly what to persist. store_sha empty means
+  # "persist nothing" (SHA-less repo or a transient failure with no fallback),
+  # so that repo is retried on the next run instead of caching junk.
+  store_sha="" store_desc="" store_ts=""
+
+  # A cache hit needs: not --force, a non-empty local SHA that matches the
+  # cached SHA, a cached description, and an entry younger than the TTL.
+  if [ "$FORCE" -eq 0 ] && [ -n "$sha" ] && [ "$sha" = "$c_sha" ] \
+       && [ -n "$c_desc" ] && [ $(( NOW - c_ts )) -lt "$TTL_SECS" ]; then
+    desc="$c_desc"
+    # Re-persist unchanged, preserving the ORIGINAL fetch time so the TTL keeps
+    # counting from the last real fetch rather than resetting on every hit.
+    store_sha="$sha" store_desc="$c_desc" store_ts="$c_ts"
+    hits=$(( hits + 1 ))
+  else
+    misses=$(( misses + 1 ))
+    fetch_description "$slug"   # sets FETCH_TEXT / FETCH_OK
+    if [ "$FETCH_OK" -eq 1 ]; then
+      # Definitive answer — cache it against the current SHA, timestamped now.
+      desc="$FETCH_TEXT"
+      [ -n "$sha" ] && { store_sha="$sha" store_desc="$desc" store_ts="$NOW"; }
+    elif [ -n "$c_desc" ]; then
+      # Transient failure — show the stale value and keep the OLD entry verbatim
+      # (old SHA + old time) so next run still sees a mismatch and retries.
+      desc="$c_desc"
+      [ -n "$c_sha" ] && { store_sha="$c_sha" store_desc="$c_desc" store_ts="$c_ts"; }
+    else
+      desc="$FETCH_TEXT"        # transient failure, nothing cached — show marker
+    fi
+  fi
+
+  tracked+="- **$name** — \`$path\` (\`$slug\`) — $desc"$'\n'
+
+  if [ -n "$store_sha" ]; then
+    NEW_CACHE="$(printf '%s' "$NEW_CACHE" | jq \
+      --arg s "$slug" --arg sha "$store_sha" --arg desc "$store_desc" --argjson ts "$store_ts" \
+      '.[$s] = {sha: $sha, description: $desc, fetched: $ts}')"
   fi
 done
 
@@ -139,3 +228,13 @@ chmod 664 "$tmp"   # mktemp defaults to 0600; restore group read for the develop
 mv "$tmp" "$OUT_FILE"
 trap - EXIT
 echo "Wrote $OUT_FILE"
+
+# --- persist the cache (atomically) ----------------------------------------
+mkdir -p "$(dirname "$CACHE_FILE")"
+ctmp="$(mktemp "$CACHE_FILE.XXXXXX")"
+trap 'rm -f "$ctmp"' EXIT
+printf '%s\n' "$NEW_CACHE" > "$ctmp"
+chmod 664 "$ctmp"
+mv "$ctmp" "$CACHE_FILE"
+trap - EXIT
+echo "Cache: $hits hit(s), $misses fetch(es) -> $CACHE_FILE"

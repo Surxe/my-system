@@ -30,6 +30,8 @@ SECTION_GENERATORS=(
 echo "==> Regenerating sections"
 for gen in "${SECTION_GENERATORS[@]}"; do
   echo "  - $(basename "$gen")"
+  # Call bare (no --force): generators use their caches so a deploy only polls
+  # what actually changed. Run a generator by hand with --force to refresh all.
   "$gen"
 done
 
