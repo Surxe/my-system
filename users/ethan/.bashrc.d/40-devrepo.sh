@@ -1,14 +1,14 @@
 # --- accept pending Surxe-dev collaborator invitations (runs AS dev) ---
 #   devaccept [repo]   # if repo given, poll until that invite arrives (bounded)
 devaccept() {
-    sudo -u dev -H WANT_REPO="${1:-}" bash -c '
+    sudo -u dev -H bash -c '
         set -euo pipefail
         export GIT_TERMINAL_PROMPT=0
         tok=$(printf "protocol=https\nhost=github.com\n\n" \
               | git credential fill 2>/dev/null | sed -n "s/^password=//p")
         [ -n "$tok" ] || { echo "devaccept: no dev github token in credential store" >&2; exit 1; }
 
-        want="$WANT_REPO"
+        want="$1"
         start=$(date +%s)
         deadline=$(( start + 20 ))   # cap the wait at 20s
 
@@ -34,7 +34,7 @@ devaccept() {
             }
             sleep 1
         done
-    '
+    ' devaccept "${1:-}"
 }
 
 # --- unified repo helper: create-or-clone under /srv/dev/repos, then work as dev ---
