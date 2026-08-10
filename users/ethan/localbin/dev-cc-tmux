@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
-# dev-cc-tmux — open a tmux session in a "1x3+1" layout:
+# dev-cc-tmux — open a tmux session in a "1x3+2" layout:
 #
-#   +-----------+-----------+-----------+   top 2/3: three side-by-side
+#   +-----------+-----------+-----------+   top 73%: three side-by-side
 #   |  dev-cc   |  dev-cc   |  dev-cc   |   columns, each running dev-cc
 #   +-----------+-----------+-----------+   (devsh + Claude Code)
-#   |         ethan shell ($HOME)       |   bottom 1/3: one plain ethan
-#   +-----------------------------------+   shell, NOT Claude, cwd=$HOME
+#   | ethan shell |   devsh (dev shell) |   bottom 27%: left half = plain
+#   +-------------+---------------------+   ethan shell (cwd=$HOME); right
+#                                          half = dev shell (devsh, NOT cc)
 #
 # Meant to be launched inside a Konsole window:
 #
@@ -33,11 +34,18 @@ session="dev-cc-$$"
 tmux new-session -d -s "$session" -c "$HOME" "$launcher"
 top_left=$(tmux display-message -p -t "$session" '#{pane_id}')
 
-# Split off the full-width bottom third: a plain ethan shell at $HOME (no cmd
-# → default login shell, no Claude). The new pane becomes active; capture it.
-tmux split-window -v -l 33% -t "$top_left" -c "$HOME"
+# Split off the full-width bottom region (27% tall): a plain ethan shell at
+# $HOME (no cmd → default login shell, no Claude). The new pane becomes active;
+# capture it as the bottom-left, then halve it horizontally.
+tmux split-window -v -l 27% -t "$top_left" -c "$HOME"
+bot_left=$(tmux display-message -p -t "$session" '#{pane_id}')
 
-# Carve the top region (still top_left, now full width & 2/3 tall) into three
+# Right half of the bottom region: a dev shell via devsh, but NOT Claude. Runs
+# through an interactive ethan shell (`bash -ic`) so `devsh` is defined; devsh
+# hops to the dev user and drops to an interactive dev prompt (no `cc`).
+tmux split-window -h -l 50% -t "$bot_left" "bash -ic devsh"
+
+# Carve the top region (still top_left, now full width & 73% tall) into three
 # equal Claude columns. First cut takes the right two-thirds, then halve it.
 tmux split-window -h -l 66% -t "$top_left" -c "$HOME" "$launcher"
 top_mid=$(tmux display-message -p -t "$session" '#{pane_id}')
