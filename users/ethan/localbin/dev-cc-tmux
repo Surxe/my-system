@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # dev-cc-tmux — open a tmux session in a "1x3+2" layout:
 #
-#   +-----------+-----------+-----------+   top 73%: three side-by-side
+#   +-----------+-----------+-----------+   top 80%: three side-by-side
 #   |  dev-cc   |  dev-cc   |  dev-cc   |   columns, each running dev-cc
 #   +-----------+-----------+-----------+   (devsh + Claude Code)
-#   | ethan shell |   devsh (dev shell) |   bottom 27%: left half = plain
+#   | ethan shell |   devsh (dev shell) |   bottom 20%: left half = plain
 #   +-------------+---------------------+   ethan shell (cwd=$HOME); right
 #                                          half = dev shell (devsh, NOT cc)
 #
@@ -37,7 +37,7 @@ top_left=$(tmux display-message -p -t "$session" '#{pane_id}')
 # Split off the full-width bottom region (27% tall): a plain ethan shell at
 # $HOME (no cmd → default login shell, no Claude). The new pane becomes active;
 # capture it as the bottom-left, then halve it horizontally.
-tmux split-window -v -l 27% -t "$top_left" -c "$HOME"
+tmux split-window -v -l 20% -t "$top_left" -c "$HOME"
 bot_left=$(tmux display-message -p -t "$session" '#{pane_id}')
 
 # Right half of the bottom region: a dev shell via devsh, but NOT Claude. Runs
