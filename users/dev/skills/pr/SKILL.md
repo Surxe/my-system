@@ -98,5 +98,7 @@ Report the PR URL back to the user.
 
 ## After the PR merges
 
-Once the PR is complete/merged, remind Ethan to clean up locally: fetch, pull,
-delete the local feature branch, and switch back to the local default branch.
+Once Ethan has merged the PR, the local cleanup is handled by the **`/merged`**
+skill — it closes the initiating todo (if any), switches back to the default
+branch, fetches/pulls, and deletes the local feature branch. Point Ethan at
+`/merged` rather than doing the cleanup ad hoc here.
