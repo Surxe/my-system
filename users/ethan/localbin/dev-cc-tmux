@@ -1,33 +1,47 @@
 #!/usr/bin/env bash
-# dev-cc-tmux — open a tmux session split into N tiled panes, each running
-# `dev-cc` (devsh + cc). Meant to be launched inside a Konsole window:
+# dev-cc-tmux — open a tmux session in a "1x3+1" layout:
 #
-#   konsole -e ~/.local/bin/dev-cc-tmux [N]
+#   +-----------+-----------+-----------+   top 2/3: three side-by-side
+#   |  dev-cc   |  dev-cc   |  dev-cc   |   columns, each running dev-cc
+#   +-----------+-----------+-----------+   (devsh + Claude Code)
+#   |         ethan shell ($HOME)       |   bottom 1/3: one plain ethan
+#   +-----------------------------------+   shell, NOT Claude, cwd=$HOME
+#
+# Meant to be launched inside a Konsole window:
+#
+#   konsole -e ~/.local/bin/dev-cc-tmux
 #
 # Deployed (COPIED, review-gated) into ethan's ~/.local/bin by install.sh's
 # deploy_ethan_bin — it is NOT run from the dev-writable repo working tree, so
 # dev-tree edits can't execute as ethan without a review-gated deploy.
 #
 # Konsole's own layout format can't carry a per-pane command (it only stores
-# SessionRestoreId), so tmux does the splitting. Each pane runs dev-cc, which
-# ends in `exec bash`, so a pane stays alive as a dev shell after Claude exits.
+# SessionRestoreId), so tmux does the splitting. Each top pane runs dev-cc,
+# which ends in `exec bash`, so a pane stays alive as a dev shell after Claude
+# exits. The bottom pane runs no command, so tmux starts ethan's default shell.
 #
-# Runs AS ethan; dev-cc hops to the dev user via devsh/sudo. tmux runs on
-# ethan's default socket; the session name is PID-unique so repeated launches
-# don't collide.
+# Runs AS ethan; dev-cc hops to the dev user via devsh/sudo. The bottom pane
+# stays as ethan (no user hop). tmux runs on ethan's default socket; the session
+# name is PID-unique so repeated launches don't collide.
 set -uo pipefail
 
-panes="${1:-3}"
 # The deployed companion in ethan's own ~/.local/bin (a COPY, not the repo tree).
 launcher="$HOME/.local/bin/dev-cc"
 session="dev-cc-$$"
 
-tmux new-session -d -s "$session" "$launcher"
-for ((i = 1; i < panes; i++)); do
-    tmux split-window -t "$session" "$launcher"
-    tmux select-layout -t "$session" tiled >/dev/null
-done
-tmux select-layout -t "$session" tiled >/dev/null
+# Pane 0: top region, first Claude column (full width for now).
+tmux new-session -d -s "$session" -c "$HOME" "$launcher"
+top_left=$(tmux display-message -p -t "$session" '#{pane_id}')
+
+# Split off the full-width bottom third: a plain ethan shell at $HOME (no cmd
+# → default login shell, no Claude). The new pane becomes active; capture it.
+tmux split-window -v -l 33% -t "$top_left" -c "$HOME"
+
+# Carve the top region (still top_left, now full width & 2/3 tall) into three
+# equal Claude columns. First cut takes the right two-thirds, then halve it.
+tmux split-window -h -l 66% -t "$top_left" -c "$HOME" "$launcher"
+top_mid=$(tmux display-message -p -t "$session" '#{pane_id}')
+tmux split-window -h -l 50% -t "$top_mid"  -c "$HOME" "$launcher"
 tmux set-option -t "$session" mouse on          # click-to-focus + drag-resize
 # Bridge mouse selections to the system clipboard. With `mouse on`, tmux
 # captures drag-selections into its own buffer; without this they never reach
@@ -38,5 +52,5 @@ tmux set-option -t "$session" mouse on          # click-to-focus + drag-resize
 tmux set-option -t "$session" set-clipboard on
 tmux bind-key -T copy-mode    MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel wl-copy
 tmux bind-key -T copy-mode-vi MouseDragEnd1Pane send-keys -X copy-pipe-and-cancel wl-copy
-tmux select-pane -t "$session".0
+tmux select-pane -t "$top_left"
 exec tmux attach-session -t "$session"

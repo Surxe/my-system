@@ -43,8 +43,12 @@ append_raw() {   # $1 = text
         created=$(date -Iseconds)
         rec=$(jq -cn --arg id "$id" --arg created "$created" --arg text "$text" \
             '{id:$id, created:$created, text:$text, status:"raw"}')
-        printf '%s' "$n" > "$SEQ"
+        # Record lands first. If the inbox append fails (e.g. a perms drift on
+        # the shared store), `set -e` aborts here and .seq is left untouched — so
+        # a failed capture never silently burns an id. Advance the counter only
+        # after the record is safely written.
         printf '%s\n' "$rec" >> "$INBOX"
+        printf '%s' "$n" > "$SEQ"
         # Best-effort local commit; harmless no-op if ethan has no git identity.
         git -C "$TODO_DIR" add -A >/dev/null 2>&1 \
             && git -C "$TODO_DIR" commit -q -m "add $id" >/dev/null 2>&1 || true
