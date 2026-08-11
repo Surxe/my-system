@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+#
+# steam-price-resume-watch - trigger a Steam price refresh on resume from sleep.
+#
+# Runs as the steam-price-resume-watch.service user unit. A `--user` unit bound to
+# sleep.target does NOT reliably fire (logind never activates the user manager's
+# sleep target), so instead we subscribe to logind's PrepareForSleep signal on the
+# system bus. It carries a boolean: true = about to sleep, false = resuming. On
+# resume we start the oneshot refresh unit.
+set -euo pipefail
+
+# The match rule scopes the stream to PrepareForSleep signals only, so any
+# 'boolean false' line here unambiguously means "the system just woke up".
+dbus-monitor --system \
+    "type='signal',interface='org.freedesktop.login1.Manager',member='PrepareForSleep'" |
+while read -r line; do
+    case "$line" in
+        *"boolean false"*)
+            systemctl --user start steam-price-refresh.service || true
+            ;;
+    esac
+done

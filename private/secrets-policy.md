@@ -10,12 +10,16 @@ themselves.
 - passwords
 - API tokens
 - Restic repository password / Backblaze B2 credentials
+- Gmail App Password for `steam-price-tracker` email alerts
 - any other credential or key material
 
 ## Where they actually live
 
 - On-disk, outside this repo, with restrictive permissions (e.g. `~/.ssh/`,
-  password-file paths referenced only by environment variables).
+  password-file paths referenced only by environment variables). The
+  `steam-price-tracker` SMTP App Password lives in `~ethan/.config/steam-price-tracker/smtp.env`
+  (`chmod 600`, Ethan-owned), loaded into the tracker via the systemd unit's
+  `EnvironmentFile`; the repo carries only `smtp.env.example`.
 - Provided to tooling via the **environment**, not files in the repo — see
   [../scripts/backup-check.sh](../scripts/backup-check.sh) and
   [../storage/restic.md](../storage/restic.md).

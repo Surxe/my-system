@@ -1,0 +1,16 @@
+[Unit]
+Description=Steam price tracker - refresh on resume from sleep
+Documentation=https://github.com/Surxe/my-system
+After=default.target
+
+[Service]
+Type=simple
+# Deployed, review-gated copy on Ethan's PATH - never the dev-writable repo tree.
+# Long-running: watches logind's PrepareForSleep signal and starts a refresh on
+# each wake. Runs inside Ethan's session (no lingering needed).
+ExecStart=%h/.local/bin/steam-price-resume-watch
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
