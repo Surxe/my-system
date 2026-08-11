@@ -127,10 +127,19 @@ performed by the invitee, so it happens on the dev side via `devaccept`
 Deployed to `/usr/local/sbin/devscaffold` (`root:root 0755`) by `install.sh`. As
 ethan it, in order: (1) creates the empty remote via REST `POST /user/repos`
 (**not** `gh repo create`, whose GraphQL `createRepository` needs full `repo` even
-for public repos); (2) grants `Surxe-dev` push access; (3) **best-effort** applies
-the `main` ruleset — on a free plan this 403s for private repos, so it warns and
-continues rather than abort (no orphan repos; see "Merge gate on a free plan"). It
-prints only the plain remote URL. Read the file for the exact code.
+for public repos), seeding it with the shared merge policy (squash-only +
+auto-delete merged branches) from
+[`system/usr-local-share/devscaffold/merge-policy.json`](../system/usr-local-share/devscaffold/merge-policy.json);
+(2) grants `Surxe-dev` push access; (3) **best-effort** applies the `main` ruleset —
+on a free plan this 403s for private repos, so it warns and continues rather than
+abort (no orphan repos; see "Merge gate on a free plan"). It prints only the plain
+remote URL. Read the file for the exact code.
+
+That merge policy is a single shared definition: for a repo created some other way
+(e.g. the GitHub UI), re-apply the same fields with
+[`scripts/set-merge-policy.sh <repo>`](../scripts/set-merge-policy.sh) (run as
+ethan), the merge-policy counterpart to `protect-repo.sh` for the ruleset. Both
+read the one JSON, so there is no second copy to drift.
 
 ### The sudo bridge — [`system/etc-sudoers.d/devscaffold`](../system/etc-sudoers.d/devscaffold)
 

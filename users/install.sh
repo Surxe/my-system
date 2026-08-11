@@ -404,8 +404,9 @@ deploy_root_tier() {
         fi
         rm -f "$tmp"
     done
-    # world-readable host data (e.g. the shared protect-core ruleset that both
-    # devscaffold and protect-repo.sh consume); mirrors the repo path under
+    # world-readable host data (the shared protect-core ruleset consumed by
+    # devscaffold + protect-repo.sh, and the merge-policy definition consumed by
+    # devscaffold + set-merge-policy.sh); mirrors the repo path under
     # system/usr-local-share/ into /usr/local/share/ preserving subdirs.
     if [ -d "$REPO_ROOT"/system/usr-local-share ]; then
         while IFS= read -r -d '' f; do
