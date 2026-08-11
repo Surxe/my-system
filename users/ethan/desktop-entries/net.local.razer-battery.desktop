@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: razer-battery-status  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Razer Battery
+Comment=Show Razer mouse battery as a KDE popup
+Exec=/home/ethan/.local/bin/razer-battery --notify
+Icon=battery
+Terminal=false
+Categories=Utility;
