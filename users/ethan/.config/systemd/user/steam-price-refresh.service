@@ -1,0 +1,17 @@
+[Unit]
+Description=Steam price tracker - one refresh (fetch prices, email alerts)
+Documentation=https://github.com/Surxe/my-system
+# No network ordering here: user-scope network targets are inert, so the
+# ExecStart script waits for real connectivity itself (see steam-price-refresh).
+
+[Service]
+Type=oneshot
+# Ethan-owned SMTP credentials (chmod 600). Leading '-' => a missing file is NOT
+# an error: the price fetch still runs, email just stays disabled.
+EnvironmentFile=-%h/.config/steam-price-tracker/smtp.env
+# Deployed, review-gated copy on Ethan's PATH - never the dev-writable repo tree.
+# It waits for the network to come up, then runs the tracker once.
+ExecStart=%h/.local/bin/steam-price-refresh
+
+# Triggered on demand by steam-price-resume-watch.service; not enabled directly,
+# so no [Install] section. Run by hand to test:  systemctl --user start steam-price-refresh

@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+#
+# steam-price-refresh - run the Steam price tracker once, AFTER the network is up.
+#
+# Invoked by the steam-price-refresh.service systemd user unit (which loads the
+# SMTP credentials via EnvironmentFile). Safe to run by hand to test. Any args are
+# forwarded to the tracker (e.g. `steam-price-refresh --test-email`).
+#
+# On resume from sleep the NIC/DNS/route may not be ready for a few seconds, so we
+# poll for real connectivity to Steam (the actual dependency) before running,
+# rather than trusting inert user-scope network targets.
+set -euo pipefail
+
+REPO="/srv/dev/repos/steam-price-tracker"
+PY="$REPO/.venv/bin/python"
+WAIT_TRIES=60          # up to ~120s (60 * 2s)
+WAIT_SLEEP=2
+
+online() {
+    if command -v curl >/dev/null 2>&1; then
+        curl -sf -m 5 -o /dev/null https://store.steampowered.com/ && return 0
+    fi
+    # Fallback if curl is unavailable: DNS resolution is a decent liveness proxy.
+    getent hosts store.steampowered.com >/dev/null 2>&1
+}
+
+for _ in $(seq 1 "$WAIT_TRIES"); do
+    online && break
+    sleep "$WAIT_SLEEP"
+done
+
+cd "$REPO"
+exec "$PY" -m steam_price_tracker "$@"
