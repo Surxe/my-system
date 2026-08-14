@@ -6,6 +6,9 @@ Documentation=https://github.com/Surxe/my-system
 
 [Service]
 Type=oneshot
+# Non-secret settings (tracked-apps path, recipient, SMTP transport) - checked
+# into my-system and deployed alongside this unit by install.sh.
+EnvironmentFile=%h/.config/steam-price-tracker/options.conf
 # Ethan-owned SMTP credentials (chmod 600). Leading '-' => a missing file is NOT
 # an error: the price fetch still runs, email just stays disabled.
 EnvironmentFile=-%h/.config/steam-price-tracker/smtp.env
