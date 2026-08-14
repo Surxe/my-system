@@ -8,9 +8,12 @@
 - [WGU AI masters plan](wgu-ai-masters-plan.md) — enrolling in WGU M.S. SWE (AI) funded by Nelnet tuition assistance; plan in /srv/dev/repos/wgu-ai-masters
 - [ethan bashrc aliases](ethan-bashrc-aliases.md) — ethan's dev-helper shell functions (devsh/devperms/devclone/…), split into ~/.bashrc.d/; documented in system-context repo
 - [No auto-memory without consent](no-auto-memory-without-consent.md) — never auto-write memories; propose to Ethan; edit the repo copy (my-system) not live
+- [Memory files edit in repo](memory-files-edit-in-repo.md) — writing/editing ANY memory file → edit repo copy users/dev/memory/<proj>/, never live ~/.claude; deploy via install.sh
 - [No emojis in files](no-emojis-in-files.md) — never use emojis/emoticons in written files; chat only
 - [Bashrc edit workflow](bashrc-edit-workflow.md) — edit .bashrc.d helpers in the my-system repo (dev-writable), then ask before commit + remind to run install.sh
 - [GitHub auth as dev](github-auth-as-dev.md) — gh is persistently authed as dev (hosts.yml); call gh directly, no GH_TOKEN
 - [No symlink repo→home](no-symlink-repo-to-home.md) — never symlink dev-writable repo files into Ethan's home; install.sh must COPY (privilege boundary)
 - [todo command = no action](todo-command-no-action.md) — `todo` CLI calls are Ethan logging, not requests; don't act/spend tokens unless explicitly asked
 - [User-specific via my-system](user-specific-via-my-system.md) — new skills/aliases/shortcuts/statusbars go in my-system + install.sh, never edited in user files directly
+- [my-system generated files](my-system-generated-files.md) — my-system PRs often show auto-gen diffs in users/dev/CLAUDE.md + sections/repo-descriptions.md; edit blueprint/generators, not output
+- [No email in repos](no-email-in-repos.md) — never commit email addresses; they live in Ethan's config set manually; document only their location in my-system
