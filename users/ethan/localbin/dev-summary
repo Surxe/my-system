@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# dev-summary — desktop-launcher entry point for the dev-summary run.
+#
+# Runs AS ethan (the live KDE session user), but immediately hops to the `dev`
+# user to do the actual work: the summary code (src/) and its .venv live in the
+# dev-writable dev-summary repo, so they must NOT execute with ethan's
+# privileges — a dev-tree edit would otherwise run as ethan. `dev` running its
+# own repo's code is not an escalation. Only THIS thin launcher runs as ethan,
+# and it is a COPY in ethan's ~/.local/bin (deployed + review-gated by
+# my-system/users/install.sh), never the dev-writable repo tree. Same shape as
+# wrf-news-snapshot: a copied ethan launcher that drops to dev via the devsh
+# sudo bridge.
+#
+# Depends on: passwordless `sudo -u dev` for ethan (the devsh bridge) and the
+# repo's .venv python. Extra args pass through to `python -m src`
+# (e.g. --dry-run, --backend api).
+set -uo pipefail
+
+# Do the run as dev, inside the repo, with the repo's venv python. `-H` gives
+# dev's HOME; the inner `_` is $0 so any launcher args land in "$@" for src.
+sudo -u dev -H bash -c 'cd /srv/dev/repos/dev-summary && exec .venv/bin/python -m src "$@"' _ "$@"
+status=$?
+
+# Keep the terminal window open when launched from the desktop entry, so the
+# output stays readable. Skipped when not attached to a TTY.
+if [ -t 0 ]; then
+    echo
+    read -n1 -r -p "Done (exit $status). Press any key to close..."
+    echo
+fi
+exit "$status"
