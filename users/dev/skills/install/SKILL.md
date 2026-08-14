@@ -15,11 +15,19 @@ KDE Plasma / Wayland / NVIDIA workstation.
 ## Hard constraints — read first
 
 - **You have no sudo.** Claude runs as the unprivileged `dev` user and can never
-  run the install itself. Your job is to **resolve the right method and paste
-  commands in chunks** for the user to run.
-- **The user runs commands, not you.** Present each command prefixed with `!` so
-  the user can paste it into the prompt and its output flows back to you. Wait
-  for that output and verify it before sending the next chunk.
+  run a **privileged** install itself. For anything that needs `sudo`, your job is
+  to **resolve the right method and paste commands in chunks** for the user to run.
+- **Run the unprivileged commands yourself.** Steps that don't actually need
+  `sudo` — read-only probes (`apt-cache policy`, `apt search`, `flatpak search`),
+  version/launch checks (`<cmd> --version`), downloading an artifact to your
+  scratch dir, etc. — you can and should run directly with the Bash tool instead
+  of handing them off. Only hand a command to the user when it genuinely requires
+  privilege (`sudo`, writing under `/etc`, `/usr`, system-wide install). When in
+  doubt about whether a command needs sudo, run it yourself; if it fails on
+  permissions, then hand it over.
+- **The user runs the privileged commands, not you.** Present each such command
+  prefixed with `!` so the user can paste it into the prompt and its output flows
+  back to you. Wait for that output and verify it before sending the next chunk.
 - **Do not edit the repo.** This skill does not touch `applications/installed.md`,
   the category files, or anything else in the repo. Install-only.
 - **Never touch secrets** — SSH keys, passwords, API tokens, backup credentials
@@ -37,25 +45,25 @@ package looks unusual / non-Debian, surface that and get agreement before going 
 Check each tier in order and **stop at the first tier that has the package.**
 Prefer apt, then flatpak, then upstream — do not skip ahead for convenience.
 
-**Tier 1 — apt (preferred).** Ask the user to run a read-only probe and paste the
-output back:
+**Tier 1 — apt (preferred).** Run the read-only probe yourself with the Bash tool
+(it needs no sudo):
 
 ```
-! apt-cache policy <pkg>
+apt-cache policy <pkg>
 ```
 
 If you don't know the exact package name, search first:
 
 ```
-! apt search <term>
+apt search <term>
 ```
 
 If apt has it → Tier 1 wins. Go to Step 3.
 
-**Tier 2 — flatpak / flathub.** Only if apt has nothing:
+**Tier 2 — flatpak / flathub.** Only if apt has nothing (run it yourself — read-only):
 
 ```
-! flatpak search <term>
+flatpak search <term>
 ```
 
 If flathub has it → Tier 2 wins. Go to Step 3.
@@ -150,17 +158,17 @@ Note any KDE / Wayland / NVIDIA portal or theming caveats relevant to the app.
 
 ## Step 5 — Verify the install
 
-Have the user run and paste a version or launch check, and confirm success from
+Run the version or launch check yourself (no sudo needed) and confirm success from
 the output:
 
 ```
-! <cmd> --version
+<cmd> --version
 ```
 
 or, for flatpak:
 
 ```
-! flatpak run <app-id> --version
+flatpak run <app-id> --version
 ```
 
 ## Step 6 — Close out (no repo writes)
@@ -175,7 +183,9 @@ yourself) that:
 ## Command-hygiene checklist
 
 - One logical action per pasted block; label it and say what to look for.
-- Always prefix user-run commands with `!` so output returns to the session.
+- Run unprivileged commands (probes, searches, version checks) yourself with Bash;
+  only hand off commands that genuinely need `sudo`.
+- Prefix **user-run** (privileged) commands with `!` so output returns to the session.
 - No interactive flags (e.g. `-i`); `apt-get` without `-y` on purpose.
-- Never run the privileged install yourself — you only paste.
+- Never run the privileged install yourself — you only paste those.
 - Never touch secrets or keys.
