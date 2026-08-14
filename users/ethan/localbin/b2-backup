@@ -1,0 +1,39 @@
+#!/usr/bin/env bash
+# b2-backup — desktop-launcher entry point for the Restic -> Backblaze B2 backup.
+#
+# Runs AS ethan (the live KDE session user) and STAYS as ethan — unlike the
+# wrf-news-snapshot launcher, it must NOT drop to `dev`: only ethan can read every
+# backup source (~/Documents, ~/.ssh) plus the shared /srv/dev/* files. Running as
+# `dev` would silently skip the home-dir sources (see b2-backup/README.md).
+#
+# This is the reviewed, review-gated COPY in ethan's ~/.local/bin (deployed by
+# my-system/users/install.sh) — it is the leaf that runs as ethan. It then invokes
+# the b2-backup repo's own scripts (backup.sh, b2-usage.sh). Those repo scripts are
+# dev-writable and executing them as ethan is a deliberate, documented exception
+# (approved for this shortcut): b2-backup's whole design is "ethan runs these
+# scripts by hand", and there is no privilege-preserving alternative that can still
+# read the home sources.
+#
+# Sequence: back up all four groups, then print the stored-size / cap usage report.
+# Any args pass through to backup.sh (e.g. `b2-backup ssh envs` to limit groups);
+# the usage report always runs afterward.
+set -uo pipefail
+
+REPO="/srv/dev/repos/b2-backup"
+
+echo "== b2-backup: running backup =="
+"$REPO/backup.sh" "$@"
+status=$?
+
+echo
+echo "== b2-backup: usage report =="
+"$REPO/b2-usage.sh" || true
+
+# Keep the terminal window open when launched from the desktop entry, so output
+# stays readable. Skipped when not attached to a TTY.
+if [ -t 0 ]; then
+    echo
+    read -n1 -r -p "Done (backup exit $status). Press any key to close..."
+    echo
+fi
+exit "$status"
