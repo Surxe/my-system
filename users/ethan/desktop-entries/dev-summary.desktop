@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: dev-summary  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Dev Summary
+Comment=Summarize recent local git commit activity across all repos
+Exec=/home/ethan/.local/bin/dev-summary
+Icon=text-x-changelog
+Terminal=true
+Categories=Utility;
