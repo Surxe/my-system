@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: b2-backup  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=B2 Backup
+Comment=Run the Restic -> Backblaze B2 backup (all groups), then show usage
+Exec=/home/ethan/.local/bin/b2-backup
+Icon=drive-harddisk
+Terminal=true
+Categories=Utility;
