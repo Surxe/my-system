@@ -14,6 +14,7 @@
 - [GitHub auth as dev](github-auth-as-dev.md) — gh is persistently authed as dev (hosts.yml); call gh directly, no GH_TOKEN
 - [No symlink repo→home](no-symlink-repo-to-home.md) — never symlink dev-writable repo files into Ethan's home; install.sh must COPY (privilege boundary)
 - [todo command = no action](todo-command-no-action.md) — `todo` CLI calls are Ethan logging, not requests; don't act/spend tokens unless explicitly asked
+- [todo done command](todo-done-command.md) — mark a todo complete with `todo done <id>`; reopen/rm round out the lifecycle
 - [User-specific via my-system](user-specific-via-my-system.md) — new skills/aliases/shortcuts/statusbars go in my-system + install.sh, never edited in user files directly
 - [my-system generated files](my-system-generated-files.md) — my-system PRs often show auto-gen diffs in users/dev/CLAUDE.md + sections/repo-descriptions.md; edit blueprint/generators, not output
 - [No email in repos](no-email-in-repos.md) — never commit email addresses; they live in Ethan's config set manually; document only their location in my-system
