@@ -20,6 +20,7 @@ Do this by default:
 ### GitHub-tracked
 
 - **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — (no description set)
+- **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — (no description set)
 - **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — (no description set)
 - **my-system** — `/srv/dev/repos/my-system` (`Surxe/my-system`) — My windows-debian dual boot system with Claude skills, KDE shortcuts, Terminal aliases & functions, and so much more for configuring the multi-user permission security suite
 - **ooz** — `/srv/dev/repos/ooz` (`powzix/ooz`) — Open source Kraken / Mermaid / Selkie / Leviathan / LZNA / Bitknit decompressor
@@ -39,7 +40,6 @@ Do this by default:
 
 ### Local-only (no GitHub remote)
 
-- **clip-db** — `/srv/dev/repos/clip-db` — local-only (no GitHub remote)
 - **pal-venv** — `/srv/dev/repos/pal-venv` — local-only (no GitHub remote)
 - **system-context** — `/srv/dev/repos/system-context` — local-only (no GitHub remote)
 - **wgu-ai-masters** — `/srv/dev/repos/wgu-ai-masters` — local-only (no GitHub remote)

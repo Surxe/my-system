@@ -6,7 +6,12 @@ dev-writable but some files run as ethan or root.
 
 ```
 users/
-  install.sh        # deploys everything (run as ethan for all tiers; as dev for dev-tier)
+  install.sh        # thin ORCHESTRATOR: sources installers/common.sh, guards the
+                    #   operator (ethan/root), runs installers/*.sh in a fixed order
+  installers/       # one standalone, individually-runnable script per deploy step
+    common.sh       #   SOURCED lib: shared env (REPO_ROOT/ME/homes) + say + review gate
+    *.sh            #   e.g. root-tier.sh, ethan-config.sh, dev-skills.sh, todo-ethan.sh
+  build.sh          # regenerates generated artifacts (run-builders.sh calls this)
   dev/              # dev-tier: dev's own config (moved from the old dev-user repo)
                     #   build-claude-md.sh assembles CLAUDE.md; install.sh copies it
     skills/         #   dev's Claude skills -> ~dev/.claude/skills/ (e.g. add-shortcut)
@@ -16,6 +21,14 @@ users/
     .config/devscaffold/token.example   # real `token` is gitignored (secret)
 ../system/          # root-tier: installed to /usr/local/sbin + /etc/sudoers.d as root
 ```
+
+`install.sh` is only the orchestrator; the deploy logic lives in `installers/`. Each
+`installers/<step>.sh` sources `installers/common.sh` and can be run on its own to
+re-apply just that step (e.g. `bash installers/desktop-entries.sh`). The canonical
+run order is the `INSTALLERS` array in `install.sh`. **Note:** `install.sh` and the
+`installers/*.sh` scripts are themselves in the dev-writable tree and are NOT covered
+by the review gate (which covers each *deployed* file) — same trust surface as when
+this was one monolithic `install.sh`.
 
 ## Deploy
 
