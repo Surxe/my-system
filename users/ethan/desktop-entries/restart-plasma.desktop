@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: manual  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Restart Plasma
+Comment=Restart the KDE Plasma shell (plasmashell)
+Exec=systemctl --user restart plasma-plasmashell.service
+Icon=application-x-executable
+Terminal=false
+Categories=Utility;
