@@ -5,8 +5,9 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 # --- ethan-tier: assert declared taskbar group config onto EXISTING widgets (privileged) ---
 # Reads users/ethan/kde-taskbar-groups.conf and, per monitor:
 #   - sets each "Launcher Group" widget's launchers= (matched by its groupName),
-#   - flips showOnlyMinimized=true on the panel's one empty Icons-Only Task Manager
-#     when the conf has `show-minimized-tasks`,
+#   - sets showOnlyMinimized on the panel's one empty Icons-Only Task Manager to
+#     match the conf's `show-minimized-tasks` directive (bare or `true` => true,
+#     `false` => false; directive absent => left untouched),
 #   - strips stray MySystemGroup/MySystemSep marker keys off any NON-Launcher-Group
 #     widget (leftovers from earlier attempts that plasmashell's id-reuse glued on).
 #
@@ -78,12 +79,14 @@ with open(conf_path, encoding="utf-8") as f:
             continue
         if s.startswith("[") and "]" in s:
             cur = s[1:s.index("]")].strip()
-            conf.setdefault(cur, {"groups": {}, "showmin": False}); grp = None; continue
+            conf.setdefault(cur, {"groups": {}, "showmin": None}); grp = None; continue
         if cur is None:
             continue
         low = s.lower()
-        if low == "show-minimized-tasks":
-            conf[cur]["showmin"] = True; grp = None; continue
+        if low == "show-minimized-tasks" or low.startswith("show-minimized-tasks "):
+            # bare or `true` => True, `false` => False (absent stays None = untouched)
+            val = low[len("show-minimized-tasks"):].strip()
+            conf[cur]["showmin"] = (val != "false"); grp = None; continue
         if low.startswith("group "):
             grp = s[5:].strip(); conf[cur]["groups"].setdefault(grp, []); continue
         if line[:1] in (" ", "\t") and grp is not None:
@@ -142,13 +145,14 @@ for P in panels:
         if norm(gen(P, aid).get("launchers")) != norm(csv):
             actions.append((P, aid, "launchers", csv))
 
-    if c["showmin"]:
+    if c["showmin"] is not None:
+        want = "true" if c["showmin"] else "false"
         empties = [aid for aid in applets
                    if plugin(P, aid) == IT and not norm(gen(P, aid).get("launchers"))]
         if len(empties) == 1:
             aid = empties[0]
-            if (gen(P, aid).get("showOnlyMinimized", "") or "").lower() != "true":
-                actions.append((P, aid, "showOnlyMinimized", "true"))
+            if (gen(P, aid).get("showOnlyMinimized", "") or "").lower() != want:
+                actions.append((P, aid, "showOnlyMinimized", want))
         elif not empties:
             sys.stderr.write("taskbar-groups: %s — show-minimized-tasks: no empty task manager\n" % conn)
         else:
