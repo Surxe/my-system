@@ -19,6 +19,12 @@ skills/
   [`../../ethan/desktop-entries/`](../../ethan/desktop-entries/) via
   `add-shortcut/make-shortcut.sh`; `install.sh` deploys it to ethan's menu +
   desktop.
+- **add-to-taskbar** — add an app to one of Ethan's custom "Launcher Group"
+  taskbars (`hdmi1`/`hdmi2` on the left monitor, `dp2` on the right; `dp1` is the
+  stock default and unmanaged). Resolves the app to a launcher URL and inserts it
+  into [`../../ethan/kde-taskbar-groups.conf`](../../ethan/kde-taskbar-groups.conf)
+  via `add-to-taskbar/add-to-taskbar.sh`; `install.sh` asserts it onto the live
+  widgets. See `operating-system/taskbar-shortcut-groups.md`.
 - **brainstorm** — divergent precursor to `/plan`. Given a feature idea, surfaces
   adjacent ideas, pros/cons, and open questions in one sharp pass, ending with a
   nudge to go deeper. Instructions-only (no helper script).

@@ -72,20 +72,22 @@ alias has key `filemanager`, which does not match Dolphin's windows
 (`org.kde.dolphin`), so its hide-when-visible logic never fires. Reference the app
 directly instead — e.g. the file manager is `applications:org.kde.dolphin.desktop`.
 
-## The "minimized windows" task manager (DP-left)
+## The empty task manager (DP-left, dp1)
 
-One panel keeps a stock **Icons-Only Task Manager** with **0 pinned launchers** to
-surface running-and-minimized windows (so minimized apps can be restored). The
-conf's `show-minimized-tasks` directive (under that monitor's section) makes the
-installer set `showOnlyMinimized=true` on that panel's single empty task manager.
-This is stock Plasma, not the custom widget.
+One panel keeps a stock **Icons-Only Task Manager** with **0 pinned launchers**.
+The conf's `show-minimized-tasks` directive (under that monitor's section) toggles
+`showOnlyMinimized` on that panel's single empty task manager: bare or `true`
+surfaces only running-and-minimized windows (a place to restore minimized apps);
+`false` shows all windows (a normal task manager). Omitting the directive leaves
+the widget untouched. This is stock Plasma, not the custom widget. Currently set
+to `false`.
 
 ## Current layout
 
 - **HDMI-A-1**: `coding` (code, github-desktop, claude-dev-split, konsole),
   `media` (obs, kdenlive, pinta).
 - **DP-2**: `firefox` (dolphin, discord, firefox, steam), plus the empty
-  minimized-windows task manager.
+  task manager (`show-minimized-tasks false` — shows all windows).
 
 ## Files
 
