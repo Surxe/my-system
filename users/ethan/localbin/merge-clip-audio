@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# merge-clip-audio — desktop-launcher entry point for bulk audio-track merging.
+#
+# Opens the native KDE file picker at the clip library, lets you multi-select
+# masters, mixes each clip's split audio tracks into a _merged.mp4 (attached to the
+# master's row in the index), then shows the result.
+#
+# Two-user split (this is why the launcher can't be a single dev-side script):
+#   - The kdialog picker/popups must run AS ethan — only the live session owns the
+#     display/DBus, so a dialog spawned as dev would have nowhere to draw.
+#   - The merge itself must run AS dev — it writes /srv/dev/clips/index.sqlite,
+#     which is dev-owned and not group-writable, and its code lives in the
+#     dev-writable clip-db repo (a dev-tree edit must never execute with ethan's
+#     privileges). dev running its own repo's code is not an escalation.
+# So: dialogs here (ethan), merge hopped to dev via the devsh sudo bridge. Same
+# shape as wrf-news-snapshot. Only THIS thin launcher runs as ethan, and it is a
+# COPY in ~/.local/bin (deployed + review-gated by my-system/users/install.sh).
+#
+# Depends on: passwordless `sudo -u dev` for ethan (the devsh bridge), kdialog,
+# and the clip-db repo's .venv.
+set -uo pipefail
+
+REPO="/srv/dev/repos/clip-db"
+
+# Library dir straight from the app's own config (.env) — resolved as dev, who owns it.
+LIBRARY="$(sudo -u dev -H bash -c "cd '$REPO' && exec .venv/bin/python -c 'from clip_core.config import load_config; print(load_config().library_dir)'")"
+
+# Pick masters. --separate-output => one path per line, so spaces in names survive.
+# A non-zero exit means the user cancelled.
+if ! SELECTION="$(kdialog --title 'Merge clip audio' \
+        --getopenfilename "$LIBRARY" 'Video files (*.mp4)' \
+        --multiple --separate-output)"; then
+    exit 0
+fi
+[ -n "$SELECTION" ] || exit 0
+mapfile -t FILES <<< "$SELECTION"
+
+kdialog --title 'Merge clip audio' --passivepopup "Merging ${#FILES[@]} clip(s)..." 4 >/dev/null 2>&1 || true
+
+# Do the merge as dev. $0 is the placeholder '_'; the selected files land in "$@".
+if ! OUTPUT="$(sudo -u dev -H bash -c 'cd /srv/dev/repos/clip-db && exec .venv/bin/python clip-tagger/merge.py "$@"' _ "${FILES[@]}" 2>&1)"; then
+    kdialog --title 'Merge clip audio' --error "Merge failed:
+
+$OUTPUT"
+    exit 1
+fi
+
+# Pull the merged output paths out of the CLI lines ("[created] stem -> /path.mp4").
+mapfile -t MERGED < <(printf '%s\n' "$OUTPUT" | sed -n 's/.* -> //p')
+
+# Show the result with a button that opens the library in a NEW Dolphin window with
+# the merged files selected (a plain OK-only msgbox / inline link can't do either).
+if kdialog --title 'Merge clip audio' \
+        --yesno "$OUTPUT" --yes-label 'Open in Dolphin' --no-label 'Close'; then
+    if [ "${#MERGED[@]}" -gt 0 ]; then
+        setsid dolphin --new-window --select "${MERGED[@]}" >/dev/null 2>&1 &
+    else
+        setsid dolphin --new-window "$LIBRARY" >/dev/null 2>&1 &
+    fi
+fi
