@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: manual  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Merge clip audio
+Comment=Pick clips from the library and merge their audio tracks into _merged copies
+Exec=/home/ethan/.local/bin/merge-clip-audio
+Icon=audio-volume-high
+Terminal=false
+Categories=Utility;
