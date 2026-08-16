@@ -18,6 +18,8 @@ users/
   ethan/            # ethan-tier: files sourced by ethan's shell (run AS ethan)
     .bashrc.d/      #   devrepo/devaccept (40) + TODO 10/20/30 (see its README)
     desktop-entries/ #  *.desktop launchers -> ethan's app menu + ~/Desktop (see /add-shortcut)
+    plasmoids/      #   local Plasma widgets -> ~/.local/share/plasma/plasmoids (org.surxe.launchergroup)
+    kde-taskbar-groups.conf  # declared taskbar shortcut groups (see operating-system/taskbar-shortcut-groups.md)
     .config/devscaffold/token.example   # real `token` is gitignored (secret)
 ../system/          # root-tier: installed to /usr/local/sbin + /etc/sudoers.d as root
 ```

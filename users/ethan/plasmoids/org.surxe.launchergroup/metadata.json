@@ -1,0 +1,16 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "org.surxe.launchergroup",
+        "Name": "Launcher Group",
+        "Description": "A group of app launchers; each launcher hides while its app has a visible (non-minimized) window on any screen, and shows when the app is closed or only minimized.",
+        "Category": "Windows and Tasks",
+        "Icon": "object-group",
+        "License": "GPL-2.0+",
+        "Version": "0.1",
+        "Authors": [
+            { "Name": "Surxe" }
+        ]
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
