@@ -7,7 +7,7 @@ controls its home — so there is **no review gate** (same trust model as dev's
 
 | File | Contains |
 | --- | --- |
-| `10-claude.sh` | `cc` (`claude --dangerously-skip-permissions`) |
+| `10-claude.sh` | `cc` launcher (`claude --dangerously-skip-permissions`) as a relaunch loop that pairs with the `new` bin (see `../localbin/`) to start a fresh session without inheriting the `/rename` name |
 
 Dev's `~/.bashrc` must contain the loader that sources this dir:
 
