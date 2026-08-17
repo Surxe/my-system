@@ -13,6 +13,7 @@
 #   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
 #               users/dev/skills/*       -> ~dev/.claude/skills/*      (copy; dev's own files)
 #               users/dev/memory/<proj>/* -> ~dev/.claude/projects/-<proj>/memory/* (copy; dev's own files)
+#               users/dev/localbin/*     -> ~dev/.local/bin/*          (copy, 0755; on PATH)
 #               (cross-repo) todo/bin/todo -> ~dev/.local/bin/todo     (copy; dev's own home)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
 #               users/ethan/localbin/*   -> ~ethan/.local/bin/*        (copy, 0755; on PATH)
@@ -65,7 +66,8 @@ INSTALLERS=(
   dev-claude-md            # dev's CLAUDE.md via sudo -u dev
   dev-skills               # dev's ~/.claude/skills via sudo -u dev
   dev-memory               # dev's ~/.claude Claude memory via sudo -u dev
-  dev-bashrc               # dev's ~/.bashrc.d fragments (cc alias) via sudo -u dev
+  dev-bashrc               # dev's ~/.bashrc.d fragments (cc launcher) via sudo -u dev
+  dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
   dev-statusline           # dev's ~/.claude status line + wires settings.json
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
 )
