@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: manual  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=clip-db pipeline
+Comment=Tag new clips: describe (opens each clip) -> ingest -> review
+Exec=/home/ethan/.local/bin/clip-db-pipeline.run.sh
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;
