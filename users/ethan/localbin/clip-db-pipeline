@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# clip-db-pipeline — full clip tagging pipeline in one terminal: describe -> ingest -> review.
+#
+# Two-user split (why the phases run as different users):
+#   1) describe.py is interactive AND opens each clip in the video player. Only ethan's
+#      live session owns the display, so this phase runs AS ethan. It writes only
+#      descriptions.json in the group-writable intake dir — it touches no dev-owned data.
+#   2) ingest.py + review.py write the dev-owned clip library and index.sqlite, and their
+#      code lives in the dev-writable clip-db repo, so they hop to dev via the devsh
+#      `sudo -u dev` bridge. stdin stays this konsole's tty, so review's prompts still work.
+# Only this thin launcher runs as ethan, and it is a COPY in ~/.local/bin (deployed +
+# review-gated by my-system/users/install.sh). Same shape as merge-clip-audio.
+set -uo pipefail
+
+REPO="/srv/dev/repos/clip-db"
+PY="$REPO/.venv/bin/python"
+
+step() { printf '\n\033[1;36m== %s ==\033[0m\n' "$1"; }
+
+step "1/3 describe  (opens each clip, prompts for a one-line description)"
+( cd "$REPO" && "$PY" clip-tagger/describe.py ) \
+    || echo "  (describe stopped early — continuing; nothing new gets tagged if no descriptions were written)"
+
+step "2/3 ingest   (classify against the vocab + move into library + index)"
+sudo -u dev -H bash -c "cd '$REPO' && exec .venv/bin/python clip-tagger/ingest.py"
+
+step "3/3 review   (confirm / fix tags, grow the vocab)"
+sudo -u dev -H bash -c "cd '$REPO' && exec .venv/bin/python clip-tagger/review.py"
+
+printf '\n\033[1;32mPipeline complete.\033[0m\n'
