@@ -21,10 +21,26 @@ step "1/3 describe  (opens each clip, prompts for a one-line description)"
 ( cd "$REPO" && "$PY" clip-tagger/describe.py ) \
     || echo "  (describe stopped early — continuing; nothing new gets tagged if no descriptions were written)"
 
+# -lc = login shell so dev's profile is sourced and PATH picks up ~/.local/bin, where the
+# `claude` CLI lives (ingest's classifier shells out to `claude`). A plain `bash -c` gets a
+# minimal PATH and fails with "FileNotFoundError: 'claude'".
 step "2/3 ingest   (classify against the vocab + move into library + index)"
-sudo -u dev -H bash -c "cd '$REPO' && exec .venv/bin/python clip-tagger/ingest.py"
+sudo -u dev -H bash -lc "cd '$REPO' && exec .venv/bin/python clip-tagger/ingest.py"
 
 step "3/3 review   (confirm / fix tags, grow the vocab)"
-sudo -u dev -H bash -c "cd '$REPO' && exec .venv/bin/python clip-tagger/review.py"
+sudo -u dev -H bash -lc "cd '$REPO' && exec .venv/bin/python clip-tagger/review.py"
 
 printf '\n\033[1;32mPipeline complete.\033[0m\n'
+
+# Open the tagged clips in the file explorer. The library lives under dev-owned
+# /srv/dev/clips, so ask the app's own config (as dev) for the path rather than
+# hardcoding it; ethan can traverse + read it, so Dolphin opens fine in this session.
+LIBRARY="$(sudo -u dev -H bash -lc "cd '$REPO' && exec .venv/bin/python -c 'from clip_core.config import load_config; print(load_config().library_dir)'" 2>/dev/null)"
+if [ -n "$LIBRARY" ] && [ -d "$LIBRARY" ]; then
+    printf 'Opening library: %s\n' "$LIBRARY"
+    if command -v dolphin >/dev/null 2>&1; then
+        setsid dolphin --new-window "$LIBRARY" >/dev/null 2>&1 &
+    else
+        setsid xdg-open "$LIBRARY" >/dev/null 2>&1 &
+    fi
+fi
