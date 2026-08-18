@@ -22,9 +22,13 @@ cc() {
     unset CLAUDE_NEW_SENTINEL
 }
 
-# Disable Claude Code's TUI mouse-click capture (v2.1.195+). The capture
+# Fully release Claude Code's TUI mouse capture. Its mouse tracking (v2.1.195+)
 # intermittently desyncs from the terminal, leaving the UI unclickable /
 # interactions silently dropped, and also causes accidental prompt approvals.
-# Setting this keeps the scroll wheel and restores native text selection;
-# prompts are answered with arrow keys + Enter. (todo t-0051)
-export CLAUDE_CODE_DISABLE_MOUSE_CLICKS=1
+# The milder CLAUDE_CODE_DISABLE_MOUSE_CLICKS keeps the scroll wheel but leaves
+# mouse reporting on, which still swallows click-drag so native text selection /
+# copy stays broken. CLAUDE_CODE_DISABLE_MOUSE=1 releases the mouse entirely:
+# click-drag selection + terminal copy work with no modifier. Trade-off is no
+# scroll wheel (scroll with PageUp / Ctrl); prompts are answered with arrow keys
+# + Enter. (todo t-0051)
+export CLAUDE_CODE_DISABLE_MOUSE=1
