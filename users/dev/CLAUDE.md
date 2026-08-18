@@ -41,6 +41,7 @@ Do this by default:
 - **WRFrontiersDB-Parser** — `/srv/dev/repos/WRFrontiersDB-Parser` (`Surxe/WRFrontiersDB-Parser`) — War Robots Frontiers Database Parser
 - **WRFrontiersDB-Site** — `/srv/dev/repos/WRFrontiersDB-Site` (`Surxe/WRFrontiersDB-Site`) — War Robots Frontiers DB Website via Astro
 - **WRFrontiers-Discount-Visualizer** — `/srv/dev/repos/WRFrontiers-Discount-Visualizer` (`Surxe/WRFrontiers-Discount-Visualizer`) — Creates a visualization of the weekly discounts
+- **WRFrontiers-Exporter** — `/srv/dev/repos/WRFrontiers-Exporter` (`Surxe/WRFrontiers-Exporter`) — Exports assets for War Robots: Frontiers
 
 ### Local-only (no GitHub remote)
 
