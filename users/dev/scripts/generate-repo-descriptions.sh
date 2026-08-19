@@ -63,6 +63,29 @@ AUTH_ARGS=()
 
 # --- helpers ---------------------------------------------------------------
 
+# Strip embedded credentials from a remote URL so a tokenized remote
+# (e.g. https://<PAT>@github.com/owner/repo.git) never lands in the generated
+# output. Removes the "userinfo@" between the scheme and the host; leaves
+# scp-style ssh remotes (git@github.com:owner/repo) untouched, since there the
+# "git@" is the SSH user, not a secret. Applied to EVERY remote URL before it
+# is classified or printed — the leak this guards against is a tokenized remote
+# being mis-classified as a non-GitHub remote and printed verbatim.
+strip_url_creds() {
+  local url="$1" scheme rest hostpart
+  # Only http(s) — that is where a token/password embeds. SSH userinfo ("git@")
+  # is just a username, is not a secret, and slug_from_url keys off it.
+  case "$url" in
+    http://*|https://*)
+      scheme="${url%%://*}://"
+      rest="${url#"$scheme"}"
+      hostpart="${rest%%/*}"          # authority component, before the first '/'
+      [ "${hostpart#*@}" != "$hostpart" ] && rest="${rest#*@}"  # drop userinfo@
+      url="$scheme$rest"
+      ;;
+  esac
+  printf '%s' "$url"
+}
+
 # origin URL -> "owner/repo", or non-zero exit if not a GitHub remote.
 slug_from_url() {
   local url="$1"
@@ -125,6 +148,7 @@ for dir in "$REPOS_DIR"/*/; do
   [ -d "$dir" ] || continue
   name="$(basename "$dir")"
   url="$(git -C "$dir" remote get-url origin 2>/dev/null || true)"
+  url="$(strip_url_creds "$url")"   # never let an embedded PAT reach the output
 
   path="$REPOS_DIR/$name"
 
