@@ -61,3 +61,10 @@ review_gate() {   # $1 = THIS repo's relative path
 TODO_REPO="/srv/dev/repos/todo"
 TODO_BIN="$TODO_REPO/bin/todo"
 TODO_BASE_REF="$(git -C "$TODO_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/master)"
+
+# --- timing helpers (used by install.sh's --debug per-step timing) ---
+# now_ms: current wall-clock time in integer milliseconds (bash 5 EPOCHREALTIME,
+# e.g. 1787184304.870728 -> seconds*1000 + microseconds/1000). fmt_dur: render an
+# integer millisecond count as a "S.mmm s" duration for human-readable output.
+now_ms(){ printf '%d' $(( ${EPOCHREALTIME%.*} * 1000 + 10#${EPOCHREALTIME#*.} / 1000 )); }
+fmt_dur(){ printf '%d.%03ds' "$(( $1 / 1000 ))" "$(( $1 % 1000 ))"; }
