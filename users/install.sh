@@ -61,6 +61,7 @@ INSTALLERS=(
   steam-tracker            # steam-price-tracker: ensure SMTP secret + enable resume watcher
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
   ethan-shortcuts          # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
+  ethan-plasmarc           # plasmarc tweaks (tooltip delay) -> ~ethan/.config/plasmarc
   ethan-plasmoids          # local Plasma widgets (launcher-group) -> ethan's ~/.local/share
   ethan-taskbar-groups     # assert launcher-group + minimized-TM config from conf
   dev-claude-md            # dev's CLAUDE.md via sudo -u dev
