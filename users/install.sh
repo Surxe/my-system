@@ -27,6 +27,12 @@
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
 #
+# Debug/timing: pass --debug (or set MYSYS_DEBUG=1) to time each deploy step and
+# print a "slowest first" summary at the end. Timing is measured at THIS orchestrator
+# level (wall-clock around each installers/*.sh), so it covers every step uniformly
+# without touching the individual, standalone-runnable installers. Use it to spot
+# which steps dominate a deploy before optimizing them.
+#
 # Operator: must be run as ethan (or root). It deploys all three tiers, including
 # dev's CLAUDE.md (written via sudo -u dev). Refuses for any other user. (This
 # guard, plus sudo + ethan's private home, is the real boundary — file-exec perms
@@ -45,6 +51,15 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "$0")")" && pwd)"   # .../users
 source "$SCRIPT_DIR/installers/common.sh"
+
+# --- args: --debug (or MYSYS_DEBUG=1) enables per-step timing. ---
+DEBUG="${MYSYS_DEBUG:-0}"
+for arg in "$@"; do
+    case "$arg" in
+        --debug|-d) DEBUG=1 ;;
+        *) say "install.sh: unknown argument '$arg' (supported: --debug)" >&2; exit 2 ;;
+    esac
+done
 
 # Ordered deploy steps (basenames under installers/). This array IS the canonical
 # run order; dependencies are filesystem-based, so order matters:
@@ -75,10 +90,34 @@ INSTALLERS=(
 
 case "$ME" in
     ethan|root)
-        say "== deploy (operator: $ME) =="
+        [ "$DEBUG" = 1 ] && _dbg=" [debug: step timing on]" || _dbg=""
+        say "== deploy (operator: $ME)$_dbg =="
+        STEP_NAMES=(); STEP_MS=()
         for name in "${INSTALLERS[@]}"; do
-            bash "$SCRIPT_DIR/installers/$name.sh"
+            if [ "$DEBUG" = 1 ]; then
+                _t0="$(now_ms)"
+                bash "$SCRIPT_DIR/installers/$name.sh"
+                _dt="$(( $(now_ms) - _t0 ))"
+                STEP_NAMES+=("$name"); STEP_MS+=("$_dt")
+                say "   [debug] $name: $(fmt_dur "$_dt")"
+            else
+                bash "$SCRIPT_DIR/installers/$name.sh"
+            fi
         done
+        if [ "$DEBUG" = 1 ]; then
+            say ""
+            say "== debug: step timings (slowest first) =="
+            total_ms=0
+            for i in "${!STEP_NAMES[@]}"; do
+                total_ms="$(( total_ms + STEP_MS[i] ))"
+            done
+            for i in "${!STEP_NAMES[@]}"; do
+                printf '%s\t%s\n' "${STEP_MS[i]}" "${STEP_NAMES[i]}"
+            done | sort -rn | while IFS=$'\t' read -r ms nm; do
+                printf '   %9s  %s\n' "$(fmt_dur "$ms")" "$nm"
+            done
+            printf '   %9s  %s\n' "$(fmt_dur "$total_ms")" "TOTAL"
+        fi
         ;;
     *)
         say "install.sh must be run as ethan (it deploys privileged files)." >&2
