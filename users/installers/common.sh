@@ -28,12 +28,26 @@ BASE_REF="$(git -C "$REPO_ROOT" rev-parse --abbrev-ref --symbolic-full-name '@{u
 [ -n "$BASE_REF" ] || BASE_REF="$(git -C "$REPO_ROOT" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
 [ -n "$BASE_REF" ] || BASE_REF="origin/master"
 
+# --- fetch memo: refresh a repo's origin at most ONCE per process, so a per-file
+#     review gate over N files costs one fetch, not N (each fetch is a network
+#     round trip). When install.sh pre-fetches every gated repo for the whole run
+#     it exports MYSYS_NO_FETCH=1, and children skip the fetch entirely. A
+#     standalone installer run (no MYSYS_NO_FETCH) still self-fetches, once. ---
+declare -A _FETCHED_REPOS
+ensure_fetched() {   # $1 = repo root
+    local root="$1"
+    [ "${MYSYS_NO_FETCH:-0}" = 1 ] && return 0   # a parent already fetched this run
+    [ -n "${_FETCHED_REPOS[$root]:-}" ] && return 0
+    git -C "$root" fetch -q origin 2>/dev/null || true
+    _FETCHED_REPOS[$root]=1
+}
+
 # --- review gate: a privileged file must match its repo's approved upstream,
 #     else prompt. review_gate_in() is generic over the repo (used for the
 #     cross-repo todo bin); review_gate() binds it to THIS repo. ---
 review_gate_in() {   # $1 = repo root, $2 = base ref, $3 = repo-relative path
     local root="$1" base="$2" rel="$3"
-    git -C "$root" fetch -q origin 2>/dev/null || true
+    ensure_fetched "$root"
     if git -C "$root" rev-parse --verify -q "$base" >/dev/null; then
         if git -C "$root" diff --quiet "$base" -- "$rel"; then
             return 0   # matches ethan-approved upstream — no prompt needed
