@@ -92,6 +92,12 @@ case "$ME" in
     ethan|root)
         [ "$DEBUG" = 1 ] && _dbg=" [debug: step timing on]" || _dbg=""
         say "== deploy (operator: $ME)$_dbg =="
+        # Pre-fetch each review-gated repo's origin ONCE for the whole run, then tell
+        # children to skip their own fetch (MYSYS_NO_FETCH). Previously every per-file
+        # review gate fetched, so N gated files cost N network round trips per step.
+        git -C "$REPO_ROOT" fetch -q origin 2>/dev/null || true
+        git -C "$TODO_REPO" fetch -q origin 2>/dev/null || true
+        export MYSYS_NO_FETCH=1
         STEP_NAMES=(); STEP_MS=()
         for name in "${INSTALLERS[@]}"; do
             if [ "$DEBUG" = 1 ]; then
