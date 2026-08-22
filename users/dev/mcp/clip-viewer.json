@@ -1,0 +1,7 @@
+{
+  "name": "clip-viewer",
+  "repo": "clip-db",
+  "command": ".venv/bin/python",
+  "args": ["clip-viewer-mcp/server.py"],
+  "scope": "user"
+}
