@@ -1,0 +1,54 @@
+#!/usr/bin/env bash
+# clip-post -- ethan entry point for posting a clip to Discord via a webhook.
+#
+# Runs AS ethan only long enough to read the ethan-owned secret, then hops to `dev`
+# to do the work. Two reasons the work must be dev, not ethan:
+#   1. post.py + the clip-distributor code is dev-writable; running it as ethan would
+#      execute dev-tree code with ethan's privileges.
+#   2. It reads/writes the dev-owned clip library (/srv/dev/clips) -- writing the
+#      compressed <stem>_merged_<N>mb.mp4 rendition needs dev.
+#
+# Secret model (same intent as wrf-orchestrator / the steam-price-tracker smtp route):
+# the webhook URL lives ONLY in ~/.config/clip-db/secrets.env (chmod 600, ethan-owned,
+# hand-maintained) -- never in the repo, never anywhere `dev` can read at rest. This
+# launcher sources it into ethan's shell and passes exactly that one value across the
+# sudo env_reset via --preserve-env, so `dev` sees it only transiently in the running
+# process. It is never placed on a command line (no `ps` exposure). If it fails to
+# arrive, post.py's preflight fails fast naming the missing var -- a safe failure.
+#
+# This is the review-gated COPY in ethan's ~/.local/bin (deployed by
+# my-system/users/install.sh -- ethan-bin.sh copies every localbin file). Args pass
+# through to post.py, e.g.
+#   clip-post                       # newest clip, best rendition
+#   clip-post "the goblin combo"    # by stem/substring
+#   clip-post latest -m "clutch 1v3"
+set -uo pipefail
+
+SECRETS="$HOME/.config/clip-db/secrets.env"
+REPO="/srv/dev/repos/clip-db"
+
+if [ ! -r "$SECRETS" ]; then
+    echo "clip-post: missing secrets file: $SECRETS" >&2
+    echo "  Create it from $REPO/clip-distributor/secrets.env.example (chmod 600); see that file." >&2
+    exit 1
+fi
+
+# Load the secret into THIS (ethan) shell only, exported so --preserve-env can carry
+# it across the sudo boundary.
+set -a; . "$SECRETS"; set +a
+
+# Hop to dev, preserving only the webhook URL. stdin/stdout stay this terminal's TTY so
+# the interactive terminal picker (when no clip is given and no display is present) still
+# works. The inner `_` is $0 so launcher args land in "$@" for post.py.
+sudo -u dev --preserve-env=CLIP_DISCORD_WEBHOOK -H bash -c '
+    cd /srv/dev/repos/clip-db || exit 1
+    exec .venv/bin/python clip-distributor/post.py "$@"
+' _ "$@"
+status=$?
+
+if [ -t 0 ]; then
+    echo
+    read -n1 -r -p "Done (exit $status). Press any key to close..."
+    echo
+fi
+exit "$status"

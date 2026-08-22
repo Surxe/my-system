@@ -1,0 +1,26 @@
+# Installed to /etc/sudoers.d/devbridge-env (mode 0440, root:root) by
+# users/install.sh, which validates it with `visudo -cf` before installing.
+#
+# Additive ENV whitelist for the ethan->dev bridge (`sudo -u dev`, used by devsh
+# and the ethan-owned launchers in ~/.local/bin). sudo's env_reset strips the
+# caller's environment by default; each variable named here is allowed to survive
+# that reset (and so to be carried by a launcher's --preserve-env) into the
+# dev-side run.
+#
+# Every entry is a SECRET sourced at launch from an ethan-owned
+# ~/.config/<tool>/secrets.env (chmod 600) and needed only transiently by a
+# dev-run tool -- never stored where dev can read it at rest. See the secret model
+# in users/dev/memory/srv-dev/secrets-for-dev-run-tools.md.
+#
+# `env_keep +=` is ADDITIVE and defines no rule of its own -- this file only
+# extends the whitelist; it does not grant or alter the bridge itself. Keep one
+# purpose per line, commented, so the blast radius of each secret is legible.
+#
+# NOTE: the ethan->dev bridge RULE (the `NOPASSWD: sudo -u dev` grant that devsh
+# relies on) is not yet captured in this repo -- only this env whitelist is. If a
+# live drop-in already lists any of these vars inline, fold it into this file so
+# the whitelist has a single source; see sudo-policy.md.
+
+Defaults:ethan env_keep += "STEAM_USERNAME STEAM_PASSWORD"   # wrf-orchestrator: Exporter Steam login
+Defaults:ethan env_keep += "GH_DATA_REPO_PAT"                # wrf-orchestrator: Parser data-repo push
+Defaults:ethan env_keep += "CLIP_DISCORD_WEBHOOK"            # clip-post: Discord webhook upload
