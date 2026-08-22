@@ -18,3 +18,4 @@
 - [User-specific via my-system](user-specific-via-my-system.md) — new skills/aliases/shortcuts/statusbars go in my-system + install.sh, never edited in user files directly
 - [my-system generated files](my-system-generated-files.md) — my-system PRs often show auto-gen diffs in users/dev/CLAUDE.md + sections/repo-descriptions.md; edit blueprint/generators, not output
 - [No email in repos](no-email-in-repos.md) — never commit email addresses; they live in Ethan's config set manually; document only their location in my-system
+- [Secrets for dev-run tools](secrets-for-dev-run-tools.md) — dev-run tool secrets live in ethan's space (dev can't read at rest), injected via an ethan launcher; never parked in ~dev
