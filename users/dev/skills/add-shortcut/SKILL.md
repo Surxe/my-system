@@ -19,15 +19,20 @@ and app-launcher menu.
   write access to `~ethan`.** So you never place files in ethan's home yourself.
   You author the launcher inside this repo (dev-writable); `users/install.sh`
   (run by ethan) copies it into ethan's menu + desktop behind its review gate.
-- **Copy, don't reference, anything ethan EXECUTES (security invariant).** The
-  leaf that runs as ethan must be a root-owned system binary (`/usr/bin/…`) or a
-  **copy** in ethan's `~/.local/bin` — never a `/srv/dev/repos` path, which is
-  dev-writable and would let a dev-tree edit run as ethan with no review gate.
-  - Executables you author for a shortcut go in `users/ethan/localbin/`;
-    `install.sh` copies them (review-gated) to `~/.local/bin`, and you reference
-    the **deployed** path `/home/ethan/.local/bin/<name>` in `Exec`.
-  - The helper **refuses** a `--command` that would exec a `/srv/dev/repos` path
-    (directly or via `konsole -e …`); relocate the target into `localbin/` first.
+- **The invariant is about NON-INTERACTIVE execution (security invariant).**
+  Dev-writable code must never run as ethan without a conscious, per-run act by
+  ethan. Ethan clicking this launcher (or typing the command) **is** that act —
+  it is the review gate, identical to running the command by hand. So an
+  interactive launcher **may** reference a `/srv/dev/repos` path: `dev` cannot
+  trigger it on its own; it runs only when ethan chooses to. A root-owned system
+  binary as the `Exec` leaf (e.g. `/usr/bin/python3 /srv/dev/repos/.../x.py`) is
+  cleanest, but the repo path as an *argument* is fine.
+  - The case the copy-not-reference rule actually guards is **automation with no
+    per-run gate** — a systemd unit/timer, a cron job, a KDE autostart entry.
+    Those must NOT reference repo code: copy the executable into ethan's own
+    `~/.local/bin` (author it in `users/ethan/localbin/`, `install.sh` copies it
+    review-gated) so what runs unattended is reviewed and `dev` can't edit it in
+    place. **Never wire a launcher generated here into such a trigger.**
   - `Path=` (cwd) and `Icon=` (asset SVGs) may stay in-repo — they are data, not
     code executed as ethan.
 - **What reaches ethan's home:** the `.desktop` (to the menu + desktop) and any
@@ -63,12 +68,14 @@ canonical dir and validates it:
 ```
 
 Notes:
-- **Local executables must be copied, not referenced.** If the shortcut runs a
-  script you control, place it in `users/ethan/localbin/<name>` and pass
-  `--command /home/ethan/.local/bin/<name>`. The helper refuses a `--command`
-  that execs a `/srv/dev/repos` path (see the security invariant above); the only
-  bypass is `--allow-repo-exec`, reserved for documented exceptions (e.g. a
-  cross-repo runner, or the deploy-my-system-config bootstrap).
+- **Referencing a `/srv/dev/repos` path is fine for these launchers** — the click
+  is the review gate (see the invariant above). The helper prints a note when it
+  sees one, as a reminder not to wire the launcher into non-interactive
+  automation. Prefer a root-owned interpreter as the leaf
+  (`/usr/bin/python3 /srv/dev/repos/.../x.py`). Only when the target will be run
+  **unattended** (systemd/cron/autostart) must you instead copy the executable
+  into `users/ethan/localbin/<name>` and reference the deployed
+  `/home/ethan/.local/bin/<name>`.
 - For a **terminal** command, the helper also generates a `<slug>.run.sh` runner
   that runs the command then pauses (*"Press any key to close…"*) so output and
   errors stay readable, and points `Exec=` at it. The runner is written to
@@ -109,8 +116,9 @@ desktop icon — click *Trust*/*Allow* once. (The menu entry needs no trust.)
 
 - Do not write into `~ethan` or run `install.sh` yourself (you're `dev`; it
   refuses for non-ethan and the deploy is ethan's to run and review).
-- The `Exec` leaf must be a system binary or a `~/.local/bin` copy — never a
-  `/srv/dev/repos` path (the helper enforces this). `Icon`/`Path` may be absolute
-  in-repo paths (assets/cwd are data). Keep all paths absolute so ethan's KDE can
-  reach them.
+- The `Exec` may reference a `/srv/dev/repos` path for an interactive launcher
+  (the click is the review gate); a root-owned interpreter as the leaf is
+  cleanest. Only code that will run **unattended** (systemd/cron/autostart) must
+  be a `~/.local/bin` copy instead. `Icon`/`Path` may be absolute in-repo paths
+  (assets/cwd are data). Keep all paths absolute so ethan's KDE can reach them.
 - Never embed secrets in a command or launcher (see `CLAUDE.md` "Never access").
