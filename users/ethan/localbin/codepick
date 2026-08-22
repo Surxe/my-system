@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# codepick — pick a repo under /srv/dev/repos via a folder dialog, open it in VS Code.
+#
+# The point-and-click complement to typing a repo name: pops a folder picker
+# rooted at your repos dir, then opens the chosen directory in VS Code.
+#
+#   codepick            # dialog -> `code <chosen>`   (new window, or focus if already open)
+#   codepick -r         # dialog -> `code -r <chosen>` (reuse current window)
+#   codepick --add      # dialog -> fold chosen repo into the current window
+# Any args are passed straight through to `code`, so every `code` flag works.
+set -euo pipefail
+
+REPOS="${DEV_REPOS:-/srv/dev/repos}"
+
+# Prefer a GUI folder picker (KDE-native kdialog), fall back to zenity, then a
+# terminal menu when there is no display (e.g. over plain SSH).
+pick_dir() {
+    local have_gui=""
+    [ -n "${WAYLAND_DISPLAY:-}${DISPLAY:-}" ] && have_gui=1
+
+    if [ -n "$have_gui" ] && command -v kdialog >/dev/null 2>&1; then
+        kdialog --title "Open repo in VS Code" --getexistingdirectory "$REPOS"
+    elif [ -n "$have_gui" ] && command -v zenity >/dev/null 2>&1; then
+        zenity --file-selection --directory \
+               --title="Open repo in VS Code" --filename="$REPOS/"
+    else
+        # Headless fallback: numbered menu of immediate subdirs.
+        local dirs=() d choice
+        for d in "$REPOS"/*/; do [ -d "$d" ] && dirs+=("${d%/}"); done
+        [ "${#dirs[@]}" -gt 0 ] || { echo "codepick: no repos under $REPOS" >&2; return 1; }
+        echo "Pick a repo to open in VS Code:" >&2
+        select choice in "${dirs[@]}"; do
+            [ -n "$choice" ] && { printf '%s\n' "$choice"; return 0; }
+        done
+        return 1
+    fi
+}
+
+target="$(pick_dir)" || exit 1
+[ -n "$target" ] || { echo "codepick: no directory chosen" >&2; exit 1; }
+
+exec code "$@" "$target"
