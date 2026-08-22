@@ -34,6 +34,7 @@ Do this by default:
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
 - **wrf-news-research** — `/srv/dev/repos/wrf-news-research` (`Surxe/wrf-news-research`) — (no description set)
 - **WRFrontiersDB-Data** — `/srv/dev/repos/WRFrontiersDB-Data` (`Surxe/WRFrontiersDB-Data`) — War Robots Frontiers Database Data Archive
+- **WRFrontiersDB-Orchestrator** — `/srv/dev/repos/WRFrontiersDB-Orchestrator` (`Surxe/WRFrontiersDB-Orchestrator`) — Orchestrates the War Robots Frontiers patch-day data pipeline: export, parse, push to data repo, and site build
 - **WRFrontiersDB-Parser** — `/srv/dev/repos/WRFrontiersDB-Parser` (`Surxe/WRFrontiersDB-Parser`) — War Robots Frontiers Database Parser
 - **WRFrontiersDB-Site** — `/srv/dev/repos/WRFrontiersDB-Site` (`Surxe/WRFrontiersDB-Site`) — War Robots Frontiers DB Website via Astro
 - **WRFrontiers-Discount-Visualizer** — `/srv/dev/repos/WRFrontiers-Discount-Visualizer` (`Surxe/WRFrontiers-Discount-Visualizer`) — Creates a visualization of the weekly discounts
