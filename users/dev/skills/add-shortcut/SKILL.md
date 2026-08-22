@@ -102,8 +102,7 @@ This regenerates artifacts, then (ethan-tier) copies every launcher in
 `~/Desktop/` (icon), refreshing the menu cache. The review gate will show a diff
 and prompt for the new file — that's expected.
 
-Then the **one** unavoidable GUI step: on first launch KDE asks to **trust** the
-desktop icon — click *Trust*/*Allow* once. (The menu entry needs no trust.)
+Do **not** tell ethan to click a KDE "Trust" prompt — the deploy sets the exec bit on an ethan-owned local copy with no download-origin xattr, so Plasma launches it directly and no such prompt fires here.
 
 ## Step 4 — Commit
 
