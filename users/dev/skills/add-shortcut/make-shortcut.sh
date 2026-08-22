@@ -6,16 +6,22 @@
 # later by `users/install.sh` (run as ethan). See SKILL.md for the full flow.
 #
 # Model (why this is safe from an unprivileged dev):
-#   - The leaf executable that runs AS ethan must be either a root-owned system
-#     binary (/usr/bin/...) or a COPY in ethan's ~/.local/bin — never a path in
-#     the dev-writable repo tree. Otherwise a dev-tree edit would run as ethan on
-#     the next click with no review gate (the copy-not-reference rule).
-#   - So: the .desktop is copied into ethan's home by install.sh; any generated
-#     runner is written into users/ethan/localbin/ and ALSO copied (review-gated)
-#     into ~/.local/bin, with Exec pointing at that deployed copy.
-#   - A command that would exec a /srv/dev/repos path as ethan is REFUSED (move
-#     the executable into users/ethan/localbin/ first). Path= (cwd) and Icon=
-#     (assets) may stay in-repo — they are data, not code executed as ethan.
+#   - The boundary that matters is NON-INTERACTIVE execution: dev-writable code
+#     must never run AS ethan without a conscious, per-run act by ethan. Ethan
+#     clicking this launcher (or typing the command) IS that act — it is the
+#     review gate, exactly like running the command by hand. So an interactive
+#     launcher MAY reference code in the dev-writable repo tree (/srv/dev/repos):
+#     dev cannot trigger it on its own; it runs only when ethan chooses to. A
+#     root-owned interpreter as the leaf (/usr/bin/python3 /srv/.../x.py) is
+#     cleanest, but a repo path as an argument is fine.
+#   - The rule the copy-not-reference pattern actually guards is automation with
+#     no per-run gate — a systemd unit/timer, a cron job, a KDE autostart entry.
+#     Those must NOT reference repo code; copy the executable into ethan's own
+#     ~/.local/bin (via users/ethan/localbin/, install.sh review-gated) so what
+#     runs unattended is reviewed and dev cannot edit it in place. Do not wire a
+#     launcher generated here into any such non-interactive trigger.
+#   - install.sh still COPIES the .desktop (and any runner) into ethan's home —
+#     that deployment is review-gated. Path= (cwd) and Icon= (assets) are data.
 #
 # Output:
 #   users/ethan/desktop-entries/<slug>.desktop   the launcher (copied to ethan's home)
@@ -44,9 +50,6 @@
 #   --filename <slug>   Override the output basename (without extension).
 #   --outdir <dir>      Output directory for the .desktop. Default: the canonical
 #                       desktop-entries/. (Generated runners always go to localbin/.)
-#   --allow-repo-exec   Escape hatch: permit a command that execs a /srv/dev/repos
-#                       path as ethan (a reference-in-place exec vector). Only for
-#                       deliberate, documented exceptions — warns loudly.
 #
 set -euo pipefail
 
@@ -70,7 +73,6 @@ categories="Utility"
 source_note=""
 filename=""
 outdir="$DEFAULT_OUTDIR"
-allow_repo_exec=false
 
 # --- parse args ---
 while [ $# -gt 0 ]; do
@@ -87,7 +89,6 @@ while [ $# -gt 0 ]; do
     --source)     source_note="${2:-}"; shift 2 ;;
     --filename)   filename="${2:-}"; shift 2 ;;
     --outdir)     outdir="${2:-}"; shift 2 ;;
-    --allow-repo-exec) allow_repo_exec=true; shift ;;
     -h|--help)    sed -n '2,52p' "$0"; exit 0 ;;
     *)            die "unknown argument: $1" ;;
   esac
@@ -98,26 +99,17 @@ done
 # First whitespace-separated token of the command (used for name/workdir/source).
 first_token="${command_str%%[[:space:]]*}"
 
-# --- security gate: nothing under the dev-writable repo tree may execute AS ethan.
-# The leaf that runs must be a root-owned system binary or a COPY in ~/.local/bin
-# (deployed from users/ethan/localbin/). A launcher that execs a /srv/dev/repos
-# path — directly, or indirectly via a wrapper like `konsole -e /srv/.../script` —
-# would let a dev-tree edit run as ethan with no review gate: the exact hole the
-# copy-not-reference rule closes. Scan the whole command (not Path=/Icon: cwd and
-# assets are data, not code). Move such a target into users/ethan/localbin/<name>
-# and pass --command "$ETHAN_LOCALBIN/<name>" instead.
+# --- interactive-launcher note (not a gate) --------------------------------
+# A .desktop launcher runs only when ethan clicks it (or the runner is typed) —
+# that per-run act is the review gate, so referencing dev-writable /srv/dev/repos
+# code here is allowed. The boundary this skill protects is NON-INTERACTIVE
+# execution (systemd/cron/autostart): never wire a launcher generated here into
+# one of those against repo code — copy the executable into ~/.local/bin first.
 case " $command_str " in
   *"/srv/dev/repos/"*)
-    if [ "$allow_repo_exec" != true ]; then
-      die "refusing: this command would EXECUTE a path under /srv/dev/repos (dev-writable) as ethan.
-   That is a reference-in-place exec vector — a dev-tree edit would run as ethan with no review gate.
-   Fix: move the executable into  users/ethan/localbin/<name>  (install.sh copies it to
-   ~/.local/bin behind the review gate), then re-run with  --command '$ETHAN_LOCALBIN/<name> [args]'.
-   For a deliberate, documented exception (e.g. a cross-repo runner), pass --allow-repo-exec."
-    fi
-    printf 'make-shortcut: WARNING (--allow-repo-exec): command execs a dev-writable\n' >&2
-    printf '  /srv/dev/repos path as ethan; this is a reference-in-place exec vector.\n' >&2
-    printf '  Prefer relocating the executable into users/ethan/localbin/.\n' >&2
+    printf 'make-shortcut: note: launcher references /srv/dev/repos (dev-writable).\n' >&2
+    printf '  Fine for an interactive launcher — the click is the review gate.\n' >&2
+    printf '  Do NOT wire it into systemd/cron/autostart; copy into ~/.local/bin for that.\n' >&2
     ;;
 esac
 

@@ -1,0 +1,10 @@
+[Desktop Entry]
+# source: clip-db  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Share Clip to Discord
+Comment=Pick a library clip, compress it under Discord upload cap, copy to clipboard
+Exec=/home/ethan/.local/bin/share-clip-to-discord.run.sh
+Path=/srv/dev/repos/clip-db
+Icon=video-x-generic
+Terminal=true
+Categories=AudioVideo;
