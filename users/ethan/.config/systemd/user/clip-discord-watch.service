@@ -1,0 +1,13 @@
+[Unit]
+Description=clip-db - drain the Discord post queue (post queued clips via clip-post)
+Documentation=https://github.com/Surxe/my-system
+After=default.target
+
+[Service]
+Type=oneshot
+# Deployed, review-gated copy on Ethan's PATH - never the dev-writable repo tree.
+# Runs as ethan: clip-post reads the ethan-owned webhook secret, then hops to dev for
+# the upload. Triggered by clip-discord-watch.path, so no [Install]/WantedBy here.
+ExecStart=%h/.local/bin/clip-discord-drain
+# Uploads are small (<=cap) but give them room rather than the 90s default.
+TimeoutStartSec=600

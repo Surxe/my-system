@@ -1,0 +1,13 @@
+[Unit]
+Description=Watch the clip-db Discord post queue for new jobs
+Documentation=https://github.com/Surxe/my-system
+
+[Path]
+# Fires clip-discord-watch.service whenever dev's MCP drops a job in the spool. The
+# drain always moves jobs OUT of incoming/ (to sent/ or failed/), so this re-arms
+# cleanly and never loops on a stuck job.
+DirectoryNotEmpty=/srv/dev/clips/discord-queue/incoming
+Unit=clip-discord-watch.service
+
+[Install]
+WantedBy=default.target

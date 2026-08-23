@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+# clip-discord-drain -- ethan-side consumer of the clip-db Discord post queue.
+#
+# The clip-viewer MCP runs as `dev`, which cannot post to Discord (the webhook URL is
+# an ethan-owned chmod-600 secret dev can't read, and dev->ethan sudo isn't granted).
+# So the MCP's queue_discord_post tool does the dev-side prep (merge + compress to fit
+# the cap) and drops a JSON job in the shared spool; THIS script -- run as ethan by the
+# clip-discord-watch.service user unit -- consumes the queue and posts each job via
+# `clip-post`, which reads the secret as ethan and hops to dev for the upload. The
+# secret therefore never touches dev.
+#
+# Each job is moved OUT of incoming/ on every run (to sent/ or failed/), so the path
+# unit that triggers this always re-arms cleanly and never loops on a stuck job.
+#
+# This is the deployed, review-gated COPY in ethan's ~/.local/bin -- never run from the
+# repo tree. Deployed by my-system/users/install.sh (ethan-bin).
+set -uo pipefail
+
+QUEUE="/srv/dev/clips/discord-queue"          # must match CLIP_DISCORD_QUEUE_DIR (clip-db .env)
+CLIPS_ROOT="/srv/dev/clips"                    # jobs may only reference files under here
+CLIP_POST="$HOME/.local/bin/clip-post"         # absolute: ~/.local/bin isn't on the unit's PATH
+
+INCOMING="$QUEUE/incoming"; SENT="$QUEUE/sent"; FAILED="$QUEUE/failed"
+mkdir -p "$SENT" "$FAILED"
+
+shopt -s nullglob
+jobs=("$INCOMING"/*.json)
+[ "${#jobs[@]}" -gt 0 ] || exit 0             # nothing queued
+
+for job in "${jobs[@]}"; do
+    file="$(jq -r '.file // empty' "$job" 2>/dev/null)"
+    msg="$(jq -r '.message // empty' "$job" 2>/dev/null)"
+
+    # Validate before doing anything: the referenced file must exist and live under the
+    # clips root (a job is dev-authored, so don't let it point the upload at arbitrary
+    # paths). A bad job goes straight to failed/.
+    ok=1
+    case "$file" in
+        "$CLIPS_ROOT"/*) [ -f "$file" ] || ok=0 ;;
+        *) ok=0 ;;
+    esac
+    if [ "$ok" != 1 ]; then
+        echo "clip-discord-drain: rejecting $job (file missing or outside $CLIPS_ROOT: '$file')" >&2
+        mv -f "$job" "$FAILED"/ 2>/dev/null || true
+        continue
+    fi
+
+    if [ -n "$msg" ]; then
+        "$CLIP_POST" "$file" -m "$msg"
+    else
+        "$CLIP_POST" "$file"
+    fi
+
+    if [ "$?" -eq 0 ]; then
+        mv -f "$job" "$SENT"/ 2>/dev/null || true
+    else
+        echo "clip-discord-drain: clip-post failed for $job" >&2
+        mv -f "$job" "$FAILED"/ 2>/dev/null || true
+    fi
+done

@@ -20,14 +20,26 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 REPOS_ROOT="/srv/dev/repos"
 INV_DIR="$REPO_ROOT/users/dev/mcp"
 
+# dev's `claude` lives at ~dev/.local/bin/claude (native install). We call it by
+# ABSOLUTE path, never bare: under `sudo -u dev` the PATH is reset to sudo's
+# secure_path, which does NOT include ~dev/.local/bin, so `sudo -u dev claude` fails
+# with "claude: command not found".
+DEV_CLAUDE="$DEV_HOME/.local/bin/claude"
+
 # Run a `claude` CLI invocation as dev: directly if we already are dev, else via
 # sudo (install.sh's operator is ethan/root, but dev-tier config is dev's own).
 dev_claude() {
-    if [ "$ME" = dev ]; then claude "$@"; else sudo -u dev claude "$@"; fi
+    if [ "$ME" = dev ]; then "$DEV_CLAUDE" "$@"; else sudo -u dev -H "$DEV_CLAUDE" "$@"; fi
 }
 
 deploy_dev_mcp() {
     [ -d "$INV_DIR" ] || { say "dev-mcp: no $INV_DIR — skipping"; return; }
+    # If claude isn't runnable for dev, SKIP (don't abort the whole deploy) -- MCP
+    # registration is optional wiring, not a reason to fail every later install step.
+    if ! dev_claude --version >/dev/null 2>&1; then
+        say "dev-mcp: 'claude' not runnable for dev at $DEV_CLAUDE — skipping MCP registration"
+        return
+    fi
     shopt -s nullglob
     local f
     for f in "$INV_DIR"/*.json; do
