@@ -75,6 +75,7 @@ INSTALLERS=(
   ethan-bin                # PATH executables (todo-capture) -> ethan's ~/.local/bin
   ethan-config             # ~/.config trees (fastfetch, systemd units, ...) -> ethan's ~/.config
   steam-tracker            # steam-price-tracker: ensure SMTP secret + enable resume watcher
+  clip-discord             # clip-db: create Discord post spool + enable queue watcher
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
   ethan-shortcuts          # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
   ethan-plasmarc           # plasmarc tweaks (tooltip delay) -> ~ethan/.config/plasmarc
