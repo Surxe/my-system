@@ -76,6 +76,7 @@ INSTALLERS=(
   ethan-config             # ~/.config trees (fastfetch, systemd units, ...) -> ethan's ~/.config
   steam-tracker            # steam-price-tracker: ensure SMTP secret + enable resume watcher
   clip-discord             # clip-db: create Discord post spool + enable queue watcher
+  claude-tts               # spoken Claude output: dev tts CLI + piper, ethan player + spool + watchers
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
   ethan-shortcuts          # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
   ethan-plasmarc           # plasmarc tweaks (tooltip delay) -> ~ethan/.config/plasmarc
@@ -100,6 +101,7 @@ case "$ME" in
         # review gate fetched, so N gated files cost N network round trips per step.
         git -C "$REPO_ROOT" fetch -q origin 2>/dev/null || true
         git -C "$TODO_REPO" fetch -q origin 2>/dev/null || true
+        git -C "$CLAUDE_TTS_REPO" fetch -q origin 2>/dev/null || true
         export MYSYS_NO_FETCH=1
         STEP_NAMES=(); STEP_MS=()
         for name in "${INSTALLERS[@]}"; do

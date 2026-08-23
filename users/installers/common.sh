@@ -76,6 +76,13 @@ TODO_REPO="/srv/dev/repos/todo"
 TODO_BIN="$TODO_REPO/bin/todo"
 TODO_BASE_REF="$(git -C "$TODO_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/master)"
 
+# --- claude-tts: spoken Claude output. Like `todo`, it lives in its OWN repo and
+# is deployed cross-repo: dev's own files (tts CLI, narrate.py) copied ungated, but
+# ethan-side files (tts-speak + the systemd user units) are review-gated against
+# claude-tts's approved upstream before they land in ethan's home. ---
+CLAUDE_TTS_REPO="/srv/dev/repos/claude-tts"
+CLAUDE_TTS_BASE_REF="$(git -C "$CLAUDE_TTS_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/main)"
+
 # --- timing helpers (used by install.sh's --debug per-step timing) ---
 # now_ms: current wall-clock time in integer milliseconds (bash 5 EPOCHREALTIME,
 # e.g. 1787184304.870728 -> seconds*1000 + microseconds/1000). fmt_dur: render an
