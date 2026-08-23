@@ -12,3 +12,4 @@ Related:
 - Root/home filesystem: ext4 — see [filesystem-layout.md](filesystem-layout.md)
 - Boot: [boot.md](boot.md)
 - Kernel: [kernel.md](kernel.md)
+- NVIDIA driver install method: [nvidia-install.md](nvidia-install.md)
