@@ -20,6 +20,7 @@ Do this by default:
 ### GitHub-tracked
 
 - **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — (no description set)
+- **claude-tts** — `/srv/dev/repos/claude-tts` (`Surxe/claude-tts`) — (no description set)
 - **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — (no description set)
 - **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — (no description set)
 - **my-system** — `/srv/dev/repos/my-system` (`Surxe/my-system`) — My windows-debian dual boot system with Claude skills, KDE shortcuts, Terminal aliases & functions, and so much more for configuring the multi-user permission security suite
