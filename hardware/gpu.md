@@ -2,7 +2,11 @@
 
 **NVIDIA RTX 5070**
 
-- Driver: proprietary NVIDIA `595.71.05`.
+- Driver: NVIDIA `595.71.05`, **open kernel module** (userspace libs are still
+  proprietary; the kernel module is `Dual MIT/GPL`). Installed from NVIDIA's
+  CUDA repo and pinned at this version — see
+  [../operating-system/nvidia-install.md](../operating-system/nvidia-install.md)
+  for the full install method.
 - Must remain **Wayland compatible** (see [../operating-system/wayland.md](../operating-system/wayland.md)).
 - The card is detected correctly and Vulkan works — see
   [../troubleshooting/solved-issues.md](../troubleshooting/solved-issues.md) for
