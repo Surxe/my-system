@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512" role="img" aria-label="Jellyfin media server">
+  <defs>
+    <linearGradient id="jf" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#00A4DC"/>
+      <stop offset="1" stop-color="#AA5CC3"/>
+    </linearGradient>
+  </defs>
+  <!-- rounded tile background -->
+  <rect x="16" y="16" width="480" height="480" rx="104" fill="url(#jf)"/>
+  <!-- stylized jellyfish, original silhouette -->
+  <g fill="#ffffff">
+    <!-- bell / dome -->
+    <path d="M256 116c-79 0-138 55-138 128 0 14 11 22 25 22h226c14 0 25-8 25-22 0-73-59-128-138-128z"/>
+    <!-- tentacles -->
+    <path d="M168 286c0 30-8 52-24 74-6 8 4 18 13 13 26-15 39-42 39-77 0-8-6-14-14-14s-14 6-14 14z"/>
+    <path d="M228 292c0 42-6 70-18 100-4 10 8 18 16 11 24-21 34-58 34-107 0-8-7-15-16-15s-16 6-16 11z"/>
+    <path d="M290 292c0 49 10 86 34 107 8 7 20-1 16-11-12-30-18-58-18-100 0-5-7-11-16-11s-16 7-16 15z"/>
+    <path d="M330 286c0 35 13 62 39 77 9 5 19-5 13-13-16-22-24-44-24-74 0-8-6-14-14-14s-14 6-14 14z"/>
+  </g>
+</svg>

@@ -1,0 +1,10 @@
+[Desktop Entry]
+# source: media-server  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Jellyfin Server
+Comment=Start the Jellyfin media server and open its web UI
+Exec=/home/ethan/.local/bin/jellyfin-server.run.sh
+Path=/srv/dev/repos/media-server
+Icon=/srv/dev/repos/my-system/users/ethan/desktop-entries/assets/jellyfin-server.svg
+Terminal=true
+Categories=Utility;
