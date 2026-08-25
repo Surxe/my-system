@@ -18,7 +18,10 @@ set -uo pipefail
 
 # Do the run as dev, inside the repo, with the repo's venv python. `-H` gives
 # dev's HOME; the inner `_` is $0 so any launcher args land in "$@" for src.
-sudo -u dev -H bash -c 'cd /srv/dev/repos/dev-summary && exec .venv/bin/python -m src "$@"' _ "$@"
+# sudo resets PATH to secure_path (no ~/.local/bin), so the claude-cli backend's
+# bare `claude` lookup fails; prepend dev's ~/.local/bin (where claude lives) so
+# the sudo'd environment matches an interactive dev shell.
+sudo -u dev -H bash -c 'export PATH="$HOME/.local/bin:$PATH" && cd /srv/dev/repos/dev-summary && exec .venv/bin/python -m src "$@"' _ "$@"
 status=$?
 
 # Keep the terminal window open when launched from the desktop entry, so the
