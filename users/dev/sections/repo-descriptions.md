@@ -21,7 +21,9 @@ Do this by default:
 
 - **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — (no description set)
 - **claude-tts** — `/srv/dev/repos/claude-tts` (`Surxe/claude-tts`) — Speak Claude Code's terminal output aloud on Linux — a token-free dev→user audio bridge using Piper TTS and systemd path units.
+- **clip-classifier-aws** — `/srv/dev/repos/clip-classifier-aws` (`Surxe/clip-classifier-aws`) — (no description set)
 - **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — (no description set)
+- **CUE4P-BatchExport** — `/srv/dev/repos/CUE4P-BatchExport` (`Surxe/CUE4P-BatchExport`) — Quickly decrypts and exports .uassets using CUE4PARSE
 - **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — (no description set)
 - **media-server** — `/srv/dev/repos/media-server` (`Surxe/media-server`) — (no description set)
 - **my-system** — `/srv/dev/repos/my-system` (`Surxe/my-system`) — My windows-debian dual boot system with Claude skills, KDE shortcuts, Terminal aliases & functions, and so much more for configuring the multi-user permission security suite
