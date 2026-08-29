@@ -1,0 +1,10 @@
+[Desktop Entry]
+# source: media-server  # hand-maintained companion to jellyfin-server.desktop
+Type=Application
+Name=Stop Jellyfin
+Comment=Stop the Jellyfin container and shut the Docker daemon back down
+Exec=/home/ethan/.local/bin/jellyfin-stop.run.sh
+Path=/srv/dev/repos/media-server
+Icon=/srv/dev/repos/my-system/users/ethan/desktop-entries/assets/jellyfin-stop.svg
+Terminal=true
+Categories=Utility;
