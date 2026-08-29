@@ -3,7 +3,9 @@
 The `dev` account is for automation, not interactive use ([users.md](users.md)).
 Two narrow, deliberate bridges cross the dev/ethan boundary; both are NOPASSWD and
 both are meant to be captured here and deployed by
-[`users/install.sh`](../users/install.sh).
+[`users/install.sh`](../users/install.sh). A third, separate NOPASSWD grant lets
+`ethan` toggle the on-demand Docker daemon (see
+[ethan -> root](#ethan---root-the-docker-daemon-bridge) below).
 
 ## dev -> ethan (account actions only)
 
@@ -49,3 +51,23 @@ To let a new dev-run tool carry a secret: add the variable here, redeploy with
 [`users/dev/memory/srv-dev/secrets-for-dev-run-tools.md`](../users/dev/memory/srv-dev/secrets-for-dev-run-tools.md).
 If a live drop-in still lists any of these inline, fold it into `devbridge-env` so
 the whitelist has a single source.
+
+## ethan -> root (the docker-daemon bridge)
+
+The Docker daemon is disabled at boot and runs only while Jellyfin is up (see
+[services/docker.md](../services/docker.md)). Two ends of that lifecycle need root:
+the "Jellyfin Server" launcher must *start* the daemon, and
+`jellyfin-daemon-guard.service` — an unattended background user unit that cannot type
+a password — must *stop* it when the container dies. So `ethan` gets NOPASSWD on
+exactly those two fixed invocations, nothing else:
+
+```
+ethan ALL=(root) NOPASSWD: /usr/bin/systemctl start docker.service
+ethan ALL=(root) NOPASSWD: /usr/bin/systemctl stop docker.service docker.socket
+```
+
+Drop-in: [`system/etc-sudoers.d/docker-daemon`](../system/etc-sudoers.d/docker-daemon).
+The full argument vector is matched (`stop docker.service docker.socket`), so this
+grant cannot start/stop/restart any other unit. Unlike the two dev/ethan bridges
+above, this one does not cross the automation boundary — it is `ethan` acting on the
+host, kept here so every NOPASSWD grant on the box has one home.

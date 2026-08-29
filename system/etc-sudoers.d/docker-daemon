@@ -1,0 +1,9 @@
+# Installed to /etc/sudoers.d/docker-daemon (mode 0440, root:root).
+# Jellyfin-gated Docker lifecycle: ethan's "Jellyfin Server" launcher starts the
+# daemon on demand, and the jellyfin-daemon-guard user service stops it again when
+# the jellyfin container dies (driven from Jellyfin's Dashboard -> Shut Down).
+# The guard runs unattended (a background systemd --user service) so it cannot type
+# a password -- hence NOPASSWD, scoped to exactly these two invocations, nothing else.
+# See my-system: users-and-permissions/sudo-policy.md and services/docker.md.
+ethan ALL=(root) NOPASSWD: /usr/bin/systemctl start docker.service
+ethan ALL=(root) NOPASSWD: /usr/bin/systemctl stop docker.service docker.socket
