@@ -24,9 +24,10 @@ Do this by default:
 ### GitHub-tracked
 
 - **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — (no description set)
+- **career** — `/srv/dev/repos/career` (`Surxe/career`) — (not found or dev lacks access)
 - **claude-tts** — `/srv/dev/repos/claude-tts` (`Surxe/claude-tts`) — Speak Claude Code's terminal output aloud on Linux — a token-free dev→user audio bridge using Piper TTS and systemd path units.
 - **clip-classifier-aws** — `/srv/dev/repos/clip-classifier-aws` (`Surxe/clip-classifier-aws`) — (no description set)
-- **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — (no description set)
+- **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — Tag, categorize, and query gaming clips via controlled-vocabulary LLM tagging over a shared core - a batch tagger, a query MCP server, a Discord-fit distributor, and an eval suite for the classifier.
 - **CUE4P-BatchExport** — `/srv/dev/repos/CUE4P-BatchExport` (`Surxe/CUE4P-BatchExport`) — Quickly decrypts and exports .uassets using CUE4PARSE
 - **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — (no description set)
 - **media-server** — `/srv/dev/repos/media-server` (`Surxe/media-server`) — (no description set)
@@ -38,7 +39,7 @@ Do this by default:
 - **steam-price-tracker** — `/srv/dev/repos/steam-price-tracker` (`Surxe/steam-price-tracker`) — Steam price tracker and notifier with app-specific price thresholds
 - **Surxe** — `/srv/dev/repos/Surxe` (`Surxe/Surxe`) — (no description set)
 - **Surxe-dev** — `/srv/dev/repos/Surxe-dev` (`Surxe-dev/Surxe-dev`) — Profile README for the sandboxed Surxe-dev automation account
-- **todo** — `/srv/dev/repos/todo` (`Surxe/todo`) — (no description set)
+- **todo** — `/srv/dev/repos/todo` (`Surxe/todo`) — A central capture system for dev/project ideas, driven from Claude Code sessions or the shell, with deferred claude -p classification.
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
 - **wrf-news-research** — `/srv/dev/repos/wrf-news-research` (`Surxe/wrf-news-research`) — (no description set)
 - **WRFrontiersDB-Data** — `/srv/dev/repos/WRFrontiersDB-Data` (`Surxe/WRFrontiersDB-Data`) — War Robots Frontiers Database Data Archive

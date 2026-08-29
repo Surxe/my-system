@@ -76,6 +76,7 @@ INSTALLERS=(
   ethan-config             # ~/.config trees (fastfetch, systemd units, ...) -> ethan's ~/.config
   steam-tracker            # steam-price-tracker: ensure SMTP secret + enable resume watcher
   clip-discord             # clip-db: create Discord post spool + enable queue watcher
+  jellyfin-guard           # media-server: reload the on-demand daemon-teardown user unit (no enable)
   claude-tts               # spoken Claude output: dev tts CLI + piper, ethan player + spool + watchers
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
   ethan-shortcuts          # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
