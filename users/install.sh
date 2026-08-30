@@ -15,6 +15,7 @@
 #               users/dev/memory/<proj>/* -> ~dev/.claude/projects/-<proj>/memory/* (copy; dev's own files)
 #               users/dev/mcp/*.json     -> dev's Claude MCP servers    (claude mcp reconcile; dev's own config)
 #               users/dev/localbin/*     -> ~dev/.local/bin/*          (copy, 0755; on PATH)
+#               (git identity)           -> ~dev/.gitconfig user.*     (git config --global; commits credit Surxe)
 #               (cross-repo) todo/bin/todo -> ~dev/.local/bin/todo     (copy; dev's own home)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
 #               users/ethan/localbin/*   -> ~ethan/.local/bin/*        (copy, 0755; on PATH)
@@ -87,6 +88,7 @@ INSTALLERS=(
   dev-memory               # dev's ~/.claude Claude memory via sudo -u dev
   dev-mcp                  # dev's Claude MCP servers (reconcile from users/dev/mcp/*.json)
   dev-bashrc               # dev's ~/.bashrc.d fragments (cc launcher) via sudo -u dev
+  dev-gitconfig            # dev's global git author identity (commits credit Surxe) via sudo -u dev
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
   dev-statusline           # dev's ~/.claude status line + wires settings.json
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev

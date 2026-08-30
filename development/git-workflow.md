@@ -22,6 +22,25 @@ scopes — a classic PAT's scopes cannot express "no force-push" or "no merge".
   protection against the *account (actor)*, not the token. Two tokens of the same
   account are indistinguishable, so "dev can't merge but ethan can" is only
   possible with a distinct account.
+
+### Commit attribution vs. push actor (dev authors as `Surxe`)
+
+GitHub credits a **commit** to an account by its **author email**, which is
+independent of the account whose PAT pushed it. So dev's git author identity is set
+to **Surxe's GitHub noreply** (`user.name = Surxe-dev`,
+`user.email = 119145352+Surxe@users.noreply.github.com`) — commit credit lands on
+Ethan's `Surxe` account while the **push** still uses the Surxe-dev PAT. Because all
+repos merge **squash-only** (see the shared merge policy), each merged PR lands one
+squash commit on `main` whose author email is dev's, so PR work credits `Surxe` too.
+The display name stays `Surxe-dev`, so the log remains honest that automation
+authored the commit.
+
+Attribution and the actor-based merge gate are **independent**: changing the author
+email does not grant dev any of `Surxe`'s access and does not weaken the gate — dev
+still pushes as the Write-only `Surxe-dev` collaborator. The identity's source of
+truth is [`users/installers/dev-gitconfig.sh`](../users/installers/dev-gitconfig.sh),
+deployed by `install.sh`. (Committing the noreply value is allowed because `+noreply`
+addresses are public-by-design; real addresses stay out of the tree.)
 - **Merge gate:** rulesets on the protected branch require a PR + 1 approval, but
   the **Repository admin role bypasses it** (`bypass_actors: [{ RepositoryRole 5,
   always }]`). `Surxe` (the owner) holds the admin role, so ethan can always merge
