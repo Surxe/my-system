@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: manual  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Repo WIP Status
+Comment=Show uncommitted/unpushed changes across all repos
+Exec=/home/ethan/.local/bin/repo-wip-status.run.sh
+Icon=utilities-terminal
+Terminal=true
+Categories=Utility;

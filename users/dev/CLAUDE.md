@@ -37,7 +37,7 @@ Do this by default:
 - **palworld-save-tools** — `/srv/dev/repos/palworld-save-tools` (`cheahjs/palworld-save-tools`) — Tools for converting Palworld .sav files to JSON and back
 - **razer-battery-status** — `/srv/dev/repos/razer-battery-status` (`Surxe/razer-battery-status`) — Razer battery status popup- ready to be triggered by a global shortcut
 - **steam-price-tracker** — `/srv/dev/repos/steam-price-tracker` (`Surxe/steam-price-tracker`) — Steam price tracker and notifier with app-specific price thresholds
-- **Surxe** — `/srv/dev/repos/Surxe` (`Surxe/Surxe`) — (no description set)
+- **Surxe** — `/srv/dev/repos/Surxe` (`Surxe/Surxe`) — GitHub profile README - datamining game files into structured, queryable data, and the databases and wikis built around it.
 - **Surxe-dev** — `/srv/dev/repos/Surxe-dev` (`Surxe-dev/Surxe-dev`) — Profile README for the sandboxed Surxe-dev automation account
 - **todo** — `/srv/dev/repos/todo` (`Surxe/todo`) — A central capture system for dev/project ideas, driven from Claude Code sessions or the shell, with deferred claude -p classification.
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
