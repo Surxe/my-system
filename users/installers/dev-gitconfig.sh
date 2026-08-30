@@ -8,11 +8,15 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 #
 # WHY these values: GitHub credits a commit to an account by its AUTHOR EMAIL, which
 # is independent of the account whose PAT pushed it. Authoring dev's commits under
-# Surxe's GitHub noreply address routes commit credit — and, since all repos use a
-# squash-only merge policy, the single squash commit per merged PR too — to Ethan's
-# `Surxe` account (numeric id 119145352), even though the push still uses the
-# Surxe-dev PAT. Attribution and the actor-based merge gate are independent, so this
-# does NOT weaken the gate. See development/git-workflow.md.
+# Surxe's GitHub noreply address routes credit to Ethan's `Surxe` account (numeric
+# id 119145352), even though the push still uses the Surxe-dev PAT:
+#   - Direct pushes preserve the local author -> Surxe is the PRIMARY author.
+#   - Squash-merged PRs force the author to the PR-submitter account (Surxe-dev), but
+#     GitHub keeps the head commit's author as a Co-authored-by trailer, so Surxe
+#     gets CO-AUTHOR credit (counts on the contribution graph). Primary credit on PRs
+#     would need a merge-commit policy instead of squash; not done here.
+# Attribution and the actor-based merge gate are independent, so this does NOT weaken
+# the gate. See development/git-workflow.md.
 #
 # The name stays `Surxe-dev` (transparent that automation authored the commit); only
 # the email carries the credit. `+noreply` addresses are public-by-design and carry
