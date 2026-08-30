@@ -28,12 +28,23 @@ scopes — a classic PAT's scopes cannot express "no force-push" or "no merge".
 GitHub credits a **commit** to an account by its **author email**, which is
 independent of the account whose PAT pushed it. So dev's git author identity is set
 to **Surxe's GitHub noreply** (`user.name = Surxe-dev`,
-`user.email = 119145352+Surxe@users.noreply.github.com`) — commit credit lands on
-Ethan's `Surxe` account while the **push** still uses the Surxe-dev PAT. Because all
-repos merge **squash-only** (see the shared merge policy), each merged PR lands one
-squash commit on `main` whose author email is dev's, so PR work credits `Surxe` too.
-The display name stays `Surxe-dev`, so the log remains honest that automation
-authored the commit.
+`user.email = 119145352+Surxe@users.noreply.github.com`) while the **push** still
+uses the Surxe-dev PAT. The display name stays `Surxe-dev`, so the log remains
+honest that automation authored the commit. How the credit actually lands depends
+on how the commit reaches the default branch:
+
+- **Direct pushes** (no PR): the local author email is preserved, so the commit
+  credits Ethan's `Surxe` account as the **primary author**.
+- **Squash-merged PRs** (the shared merge policy is squash-only): GitHub does **not**
+  keep the local author email — it forces the squash commit's author to the
+  **PR-submitter account** (`Surxe-dev`, using its primary email). But GitHub's
+  [squash co-author attribution](https://github.blog/changelog/2019-12-19-improved-attribution-when-squashing-commits/)
+  preserves the head commit's author as a `Co-authored-by:` trailer, which carries
+  Surxe's noreply — and GitHub counts co-authored commits toward **both** accounts'
+  contribution graphs. So on a squash-merged PR, `Surxe` gets **co-author** credit
+  (not primary; the "authored by" line stays `Surxe-dev`). Getting *primary* credit
+  on PRs would require switching the merge policy to "create a merge commit" (whose
+  author is whoever clicks merge), a separate tradeoff not taken here.
 
 Attribution and the actor-based merge gate are **independent**: changing the author
 email does not grant dev any of `Surxe`'s access and does not weaken the gate — dev

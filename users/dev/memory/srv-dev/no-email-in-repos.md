@@ -23,6 +23,7 @@ Related: [[user-specific-via-my-system]], [[my-system-generated-files]].
 addresses are public-by-design (GitHub exposes them on every commit) and carry no
 private mailbox, so they MAY be committed. This is why
 `users/installers/dev-gitconfig.sh` hardcodes Surxe's noreply
-(`119145352+Surxe@users.noreply.github.com`) as dev's git author email so commit
-and squash-PR credit lands on the `Surxe` account. Real/personal addresses (e.g.
+(`119145352+Surxe@users.noreply.github.com`) as dev's git author email so credit
+routes to the `Surxe` account (primary author on direct pushes; co-author on
+squash-merged PRs — see development/git-workflow.md). Real/personal addresses (e.g.
 `*@gmail.com`) remain forbidden.
