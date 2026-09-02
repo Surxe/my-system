@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: manual  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Stop Speaking
+Comment=Stop claude-tts playback immediately
+Exec=/home/ethan/.local/bin/tts-speak-stop
+Icon=media-playback-stop
+Terminal=false
+Categories=Utility;

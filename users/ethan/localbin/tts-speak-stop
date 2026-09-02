@@ -1,0 +1,23 @@
+#!/usr/bin/env bash
+#
+# tts-speak-stop - stop claude-tts playback immediately (bound to a hotkey).
+#
+# Runs AS ethan. Reuses the existing stop path entirely: touch the STOP flag the
+# ethan-side claude-tts-stop.path unit already watches, which kills the in-flight
+# paplay and clears the queue. Also clears any text still queued for synthesis so
+# nothing that was mid-pipeline starts speaking a moment later.
+#
+# This is exactly what `tts stop` does on the dev side; here it's the ethan-side
+# entry point so a global hotkey can trigger it.
+set -euo pipefail
+
+SPOOL="${TTS_SPOOL:-/srv/dev/tts/queue}"
+CONTROL="$SPOOL/control"
+TEXT_INCOMING="$SPOOL/text-incoming"
+
+mkdir -p "$CONTROL" 2>/dev/null || true
+# drop pending clipboard text so it doesn't get synthesized after the stop
+rm -f "$TEXT_INCOMING"/*.txt 2>/dev/null || true
+# fire the stop watcher (kills paplay + clears the WAV queue on the ethan side)
+: > "$CONTROL/STOP"
+kdialog --passivepopup "TTS stopped" 2 2>/dev/null || true

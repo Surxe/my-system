@@ -31,6 +31,29 @@ deploy_claude_tts() {
         "$DEV_HOME/.local/share/claude-tts/narrate.py"
     say "dev-tier: installed $DEV_HOME/.local/share/claude-tts/narrate.py"
 
+    # dev-side synth watcher: text dropped in the spool (e.g. by the clipboard
+    # hotkey) is synthesized HERE, because piper lives in ~dev (0700) and ethan
+    # cannot run it. dev's OWN units in dev's user systemd -> no review gate (dev
+    # running dev's code). dev has lingering, so the .path stays armed at rest.
+    local du duid
+    for du in claude-tts-synth.path claude-tts-synth.service; do
+        "${devrun[@]}" install -D -m 0644 "$repo/systemd/$du" \
+            "$DEV_HOME/.config/systemd/user/$du"
+        say "dev-tier: installed $DEV_HOME/.config/systemd/user/$du"
+    done
+    duid="$(id -u dev)"
+    if [ "$ME" = dev ]; then
+        systemctl --user daemon-reload || true
+        systemctl --user enable --now claude-tts-synth.path \
+            || say "!! could not enable claude-tts-synth.path"
+    else
+        sudo -u dev XDG_RUNTIME_DIR="/run/user/$duid" systemctl --user daemon-reload || true
+        sudo -u dev XDG_RUNTIME_DIR="/run/user/$duid" systemctl --user \
+            enable --now claude-tts-synth.path \
+            || say "!! could not enable claude-tts-synth.path as dev (dev lingering must be on)"
+    fi
+    say "dev-tier: claude-tts synth watcher wired"
+
     # piper binary + voice into dev's home (idempotent; ~90MB on first run only).
     "${devrun[@]}" bash "$repo/setup/install-piper.sh" \
         || say "!! claude-tts: piper bootstrap failed (check network / disk)"
@@ -76,9 +99,9 @@ PY
         say "!! claude-tts: cannot create $SPOOL_ROOT (run install.sh as ethan; /srv/dev is not dev-writable)"
     fi
     # dev creates the queue subtree inside it (dev-owned, group developers via setgid).
-    local mk='mkdir -p "'"$SPOOL"'"/{incoming,building,failed,control}
+    local mk='mkdir -p "'"$SPOOL"'"/{incoming,building,failed,control,text-incoming,text-failed}
               chgrp -R developers "'"$SPOOL"'" 2>/dev/null || true
-              chmod 2775 "'"$SPOOL"'" "'"$SPOOL"'"/{incoming,building,failed,control}'
+              chmod 2775 "'"$SPOOL"'" "'"$SPOOL"'"/{incoming,building,failed,control,text-incoming,text-failed}'
     "${devrun[@]}" bash -c "$mk"
     say "ethan-tier: claude-tts spool ready at $SPOOL"
 
