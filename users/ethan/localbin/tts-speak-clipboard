@@ -1,0 +1,48 @@
+#!/usr/bin/env bash
+#
+# tts-speak-clipboard - speak the current clipboard aloud (claude-tts).
+#
+# Bound to a global hotkey. Runs AS ethan (the hotkey side), so it can read the
+# Wayland clipboard -- which dev cannot. It only reads the clipboard and drops
+# the text in the shared spool; the dev-side claude-tts-synth.path unit picks it
+# up, runs narrate + piper (synthesis stays on dev, where piper lives), and the
+# ethan-side player speaks the resulting WAV. See the claude-tts README.
+#
+# dev cannot reach ethan's clipboard and ethan cannot run dev's piper, so the
+# clipboard text has to cross the developers-group spool -- the same boundary the
+# audio crosses, just in the other direction.
+set -euo pipefail
+
+SPOOL="${TTS_SPOOL:-/srv/dev/tts/queue}"
+TEXT_INCOMING="$SPOOL/text-incoming"
+MAX_BYTES="${TTS_CLIP_MAX_BYTES:-20000}"   # ~ a few minutes of speech; guard runaways
+
+notify() { kdialog --passivepopup "$1" "${2:-3}" 2>/dev/null || true; }
+err()    { kdialog --error "$1" 2>/dev/null || printf 'tts-speak-clipboard: %s\n' "$1" >&2; exit 1; }
+
+command -v wl-paste >/dev/null 2>&1 || err "wl-paste not found (install wl-clipboard)"
+
+text="$(wl-paste --no-newline 2>/dev/null || true)"
+# collapse to check for content without mangling what we speak
+if [ -z "${text//[[:space:]]/}" ]; then
+    notify "Clipboard is empty -- nothing to speak"
+    exit 0
+fi
+
+# Truncate very large clipboards so a stray copy of a whole file doesn't read for
+# ten minutes. Cut on a byte budget; narrate/piper handle the partial text fine.
+if [ "${#text}" -gt "$MAX_BYTES" ]; then
+    text="${text:0:$MAX_BYTES}"
+    notify "Clipboard truncated to ${MAX_BYTES} chars for speech"
+fi
+
+[ -d "$TEXT_INCOMING" ] || err "spool not ready ($TEXT_INCOMING); deploy claude-tts (run install.sh)"
+
+# Atomic drop: write a hidden staging file in the same dir, then rename it in, so
+# the dev-side path unit only ever sees a complete file.
+ts="$(date +%s%N)"
+staging="$TEXT_INCOMING/.staging-$$-$ts.txt"
+final="$TEXT_INCOMING/$ts-clipboard.txt"
+printf '%s\n' "$text" > "$staging" || err "could not write to spool"
+mv -f "$staging" "$final"
+notify "Speaking clipboard..."
