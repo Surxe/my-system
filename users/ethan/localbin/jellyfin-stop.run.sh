@@ -8,7 +8,16 @@
 set -uo pipefail
 cd /srv/dev/repos/media-server || exit 1
 
+# Hold the Konsole window open only when something is worth reading: a warning/error
+# was emitted, or --debug (JELLYFIN_DEBUG=1) was passed. A clean run closes itself.
+DEBUG="${JELLYFIN_DEBUG:-0}"
+case "${1:-}" in --debug|-d|debug) DEBUG=1 ;; esac
+warned=0
+
 pause() { [ -t 0 ] && { echo; read -n1 -rp "${1:-Press any key to close…}"; echo; }; }
+warn()  { warned=1; echo "$@"; }
+# End-of-run hold: pause only if a warning fired or we're in debug.
+pause_if_needed() { { [ "$warned" = 1 ] || [ "$DEBUG" = 1 ]; } && pause "$@"; }
 
 if systemctl is-active --quiet docker.service; then
   # Stop + remove the container while the daemon is up. If `down` can't remove it
@@ -16,12 +25,12 @@ if systemctl is-active --quiet docker.service; then
   # holding a zombie.
   docker compose down || docker rm -f jellyfin 2>/dev/null || true
   if ! sudo /usr/bin/systemctl stop docker.service docker.socket containerd.service; then
-    echo "!! Failed to stop the Docker services — check 'systemctl status docker.service'."
+    warn "!! Failed to stop the Docker services — check 'systemctl status docker.service'."
     pause; exit 1
   fi
   echo "Jellyfin and the Docker daemon are stopped."
 else
   echo "Docker daemon is already stopped — nothing to do."
 fi
-pause
+pause_if_needed
 exit 0
