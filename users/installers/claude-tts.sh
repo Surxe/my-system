@@ -7,8 +7,9 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 # the clip-discord bridge: dev synthesizes a WAV and drops it in a developers-group
 # spool; an ethan-side systemd USER path unit plays it. This step does what the
 # generic copies can't -- it spans both users and enables the units:
-#   dev side  (dev's OWN home, no review gate): tts CLI, narrate.py, piper bootstrap,
-#             and the Stop hook wired into dev's settings.json (merge-only).
+#   dev side  (dev's OWN home, no review gate): tts CLI, narrate.py, kokoro_synth.py,
+#             the kokoro + piper synth bootstraps, and the Stop hook wired into
+#             dev's settings.json (merge-only).
 #   spool     (shared): /srv/dev/tts/queue, owned by dev, group-writable + setgid.
 #   ethan side(review-gated vs claude-tts's approved upstream): tts-speak + 4 units,
 #             then enable the two path watchers in Ethan's user systemd.
@@ -30,10 +31,13 @@ deploy_claude_tts() {
     "${devrun[@]}" install -D -m 0644 "$repo/lib/narrate.py" \
         "$DEV_HOME/.local/share/claude-tts/narrate.py"
     say "dev-tier: installed $DEV_HOME/.local/share/claude-tts/narrate.py"
+    "${devrun[@]}" install -D -m 0644 "$repo/lib/kokoro_synth.py" \
+        "$DEV_HOME/.local/share/claude-tts/kokoro_synth.py"
+    say "dev-tier: installed $DEV_HOME/.local/share/claude-tts/kokoro_synth.py"
 
     # dev-side synth watcher: text dropped in the spool (e.g. by the clipboard
-    # hotkey) is synthesized HERE, because piper lives in ~dev (0700) and ethan
-    # cannot run it. dev's OWN units in dev's user systemd -> no review gate (dev
+    # hotkey) is synthesized HERE, because the synth engines live in ~dev (0700)
+    # and ethan cannot run them. dev's OWN units in dev's user systemd -> no review gate (dev
     # running dev's code). dev has lingering, so the .path stays armed at rest.
     local du duid
     for du in claude-tts-synth.path claude-tts-synth.service; do
@@ -54,7 +58,13 @@ deploy_claude_tts() {
     fi
     say "dev-tier: claude-tts synth watcher wired"
 
-    # piper binary + voice into dev's home (idempotent; ~90MB on first run only).
+    # Synth engines into dev's home (both live in ~dev; idempotent, big download
+    # on first run only). Kokoro is the default engine -- higher quality, flows
+    # across sentences -- via a self-contained venv + ONNX model (~340MB, no sudo:
+    # espeak-ng is bundled in a wheel). Piper (~90MB) stays as the automatic
+    # fallback, so a box where the Kokoro bootstrap fails still speaks.
+    "${devrun[@]}" bash "$repo/setup/install-kokoro.sh" \
+        || say "!! claude-tts: kokoro bootstrap failed (falling back to piper; check network / disk)"
     "${devrun[@]}" bash "$repo/setup/install-piper.sh" \
         || say "!! claude-tts: piper bootstrap failed (check network / disk)"
 
