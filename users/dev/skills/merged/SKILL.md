@@ -6,6 +6,7 @@ description: >-
   default branch, fetches and pulls, and deletes the now-merged local feature
   branch. Merge-gated and idempotent. Use whenever the user runs /merged or asks
   to clean up after a PR merged.
+model: haiku
 ---
 
 # Post-merge cleanup
@@ -17,6 +18,10 @@ known from conversation — no persisted linkage.
 
 **Safe to re-run.** Every step is idempotent, and no branch is deleted unless
 GitHub confirms its PR is merged.
+
+This skill is pinned to `haiku` via frontmatter: after the merge gate it is pure
+deterministic git plumbing with no judgment, so it does not warrant a large
+model. Keep it that way — if you add real decision-making here, revisit the pin.
 
 ## Auth — same as `/pr`
 
@@ -51,52 +56,54 @@ If no todo id is in play, skip this step silently. (House rule
 requests to act — this skill is the explicit exception, because closing the
 initiating todo is part of what Ethan asked `/merged` to do.)
 
-## Step 2 — Identify current and default branch
+## Step 2 — Run the cleanup script (one turn)
 
-- Current branch: `git branch --show-current`.
-- Default branch: `git symbolic-ref --quiet refs/remotes/origin/HEAD` (take the
-  leaf after `refs/remotes/origin/`); if that is unset, fall back to
-  `gh repo view --json defaultBranchRef -q .defaultBranchRef.name`.
+Everything else — branch detection, the already-clean short-circuit, the merge
+gate, and the actual cleanup — runs as a **single guarded script** so the whole
+cleanup is one tool turn rather than five. Do not break it back into separate
+`git`/`gh` calls; the point of the one-shot is to avoid re-billing the (large,
+end-of-session) context on every step.
 
-## Step 3 — Already-clean short-circuit
+```bash
+set -euo pipefail
 
-If the current branch **is** the default branch, there is no feature branch to
-clean. Just refresh and stop:
+# Default branch: origin/HEAD leaf, falling back to gh.
+default=$(git symbolic-ref --quiet refs/remotes/origin/HEAD 2>/dev/null \
+  | sed 's#^refs/remotes/origin/##')
+[ -n "${default:-}" ] || default=$(gh repo view --json defaultBranchRef \
+  -q .defaultBranchRef.name)
+current=$(git branch --show-current)
 
-```
+# Already-clean short-circuit: on default, nothing to delete.
+if [ "$current" = "$default" ]; then
+  git fetch --prune
+  git pull --ff-only
+  echo "RESULT: already on $default, nothing to clean"
+  exit 0
+fi
+
+# Merge gate — never delete unmerged local work.
+state=$(gh pr view "$current" --json state -q .state 2>/dev/null || echo NONE)
+if [ "$state" != "MERGED" ]; then
+  echo "STOP: PR for '$current' is '$state' (need MERGED). Not deleting."
+  exit 1
+fi
+
+# Clean up. -D (not -d): the merge is gated via GitHub above, and -d would
+# wrongly refuse after a squash merge (local commits aren't ancestors of
+# $default). --prune drops the remote ref GitHub auto-deleted on merge.
+git switch "$default"
 git fetch --prune
 git pull --ff-only
+git branch -D "$current"
+echo "RESULT: merged '$current' cleaned; now on $default, up to date"
 ```
 
-Report "already on <default>, nothing to clean" and finish.
+If the script prints a `STOP:` line (PR not merged, or no PR found for the
+branch), **halt and tell Ethan** — do not delete anything or improvise.
 
-## Step 4 — Merge gate (do not skip)
+## Step 3 — Report
 
-Before deleting anything, confirm the feature branch's PR is actually merged:
-
-```
-gh pr view <branch> --json state,mergedAt
-```
-
-Proceed **only** if `state` is `MERGED` (mergedAt non-null). If it is not merged,
-or no PR is found for the branch, **STOP** and tell Ethan — never delete unmerged
-local work.
-
-## Step 5 — Clean up
-
-```
-git switch <default>
-git fetch --prune
-git pull --ff-only
-git branch -D <branch>
-```
-
-`--prune` drops the remote-tracking ref for the branch GitHub auto-deleted on
-merge (all of Ethan's repos have delete-head-branch-on-merge on). Use `-D`, not
-`-d`: the merge is already gated via GitHub, and `-d` would wrongly refuse after a
-squash merge since the local commits are not ancestors of the default branch.
-
-## Step 6 — Report
-
-Briefly state what happened: todo closed (with id) if any, now on the default
-branch, feature branch deleted, tree up to date. No emojis.
+Briefly state what happened, reading it off the script's `RESULT:`/`STOP:` line:
+todo closed (with id) if any, now on the default branch, feature branch deleted,
+tree up to date. No emojis.
