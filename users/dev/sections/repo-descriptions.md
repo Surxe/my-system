@@ -19,13 +19,13 @@ Do this by default:
 
 ### GitHub-tracked
 
-- **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — (no description set)
+- **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — Manual, selective Restic to Backblaze B2 backups for a Linux workstation, with sources split into per-prefix repos in one bucket.
 - **career** — `/srv/dev/repos/career` (`Surxe/career`) — (not found or dev lacks access)
 - **claude-tts** — `/srv/dev/repos/claude-tts` (`Surxe/claude-tts`) — Speak Claude Code's terminal output aloud on Linux — a token-free dev→user audio bridge using Piper TTS and systemd path units.
 - **clip-classifier-aws** — `/srv/dev/repos/clip-classifier-aws` (`Surxe/clip-classifier-aws`) — (no description set)
 - **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — Tag, categorize, and query gaming clips via controlled-vocabulary LLM tagging over a shared core - a batch tagger, a query MCP server, a Discord-fit distributor, and an eval suite for the classifier.
 - **CUE4P-BatchExport** — `/srv/dev/repos/CUE4P-BatchExport` (`Surxe/CUE4P-BatchExport`) — Quickly decrypts and exports .uassets using CUE4PARSE
-- **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — (no description set)
+- **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — Summarize your recent local git commit activity across every repo in a single LLM call, archived per-run as Markdown/HTML and optionally emailed.
 - **media-server** — `/srv/dev/repos/media-server` (`Surxe/media-server`) — (no description set)
 - **my-system** — `/srv/dev/repos/my-system` (`Surxe/my-system`) — My windows-debian dual boot system with Claude skills, KDE shortcuts, Terminal aliases & functions, and so much more for configuring the multi-user permission security suite
 - **ooz** — `/srv/dev/repos/ooz` (`powzix/ooz`) — Open source Kraken / Mermaid / Selkie / Leviathan / LZNA / Bitknit decompressor
@@ -39,7 +39,8 @@ Do this by default:
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
 - **wrf-news-research** — `/srv/dev/repos/wrf-news-research` (`Surxe/wrf-news-research`) — (no description set)
 - **WRFrontiersDB-Data** — `/srv/dev/repos/WRFrontiersDB-Data` (`Surxe/WRFrontiersDB-Data`) — War Robots Frontiers Database Data Archive
-- **WRFrontiersDB-Orchestrator** — `/srv/dev/repos/WRFrontiersDB-Orchestrator` (`Surxe/WRFrontiersDB-Orchestrator`) — Orchestrates the War Robots Frontiers patch-day data pipeline: export, parse, push to data repo, and site build
+- **WRFrontiersDB-Design** — `/srv/dev/repos/WRFrontiersDB-Design` (`Surxe/WRFrontiersDB-Design`) — (no description set)
+- **WRFrontiersDB-Orchestrator** — `/srv/dev/repos/WRFrontiersDB-Orchestrator` (`Surxe/WRFrontiersDB-Orchestrator`) — Orchestrates the entire War Robots Frontiers data ecosystem — chaining the Exporter, Parser, Data, Site, and shared Design repos into a one-command, reproducible patch-day pipeline feeding multiple front-ends (Site + Discount Visualizer).
 - **WRFrontiersDB-Parser** — `/srv/dev/repos/WRFrontiersDB-Parser` (`Surxe/WRFrontiersDB-Parser`) — War Robots Frontiers Database Parser
 - **WRFrontiersDB-Site** — `/srv/dev/repos/WRFrontiersDB-Site` (`Surxe/WRFrontiersDB-Site`) — War Robots Frontiers DB Website via Astro
 - **WRFrontiers-Discount-Visualizer** — `/srv/dev/repos/WRFrontiers-Discount-Visualizer` (`Surxe/WRFrontiers-Discount-Visualizer`) — Creates a visualization of the weekly discounts
