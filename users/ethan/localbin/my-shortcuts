@@ -1,0 +1,166 @@
+#!/usr/bin/env bash
+# my-shortcuts — pop up a cheatsheet of my custom KDE shortcuts.
+#
+# Source of truth is the my-system repo (read-only): keyboard bindings from
+# kde-global-shortcuts.conf, launcher Names/Comments from desktop-entries/*.desktop,
+# and taskbar membership from kde-taskbar-groups.conf. So the cheatsheet stays
+# accurate automatically as shortcuts are added/removed and redeployed — nothing
+# to hand-maintain here.
+#
+# Rendered via `kdialog --textbox` (native, scrollable, resizable). Proportional
+# font, so layout uses dashes/indentation rather than space-aligned columns.
+#
+# Deployed (COPIED, review-gated) into ~/.local/bin by install.sh; it only READS
+# the repo tree, so a dev-tree edit cannot make privileged code run here.
+set -uo pipefail
+
+REPO="/srv/dev/repos/my-system"
+DE="$REPO/users/ethan/desktop-entries"
+KBD="$REPO/users/ethan/kde-global-shortcuts.conf"
+GROUPS_CONF="$REPO/users/ethan/kde-taskbar-groups.conf"
+
+# Dirs to resolve arbitrary .desktop ids (e.g. stock apps in a taskbar group).
+APPDIRS=(
+  "$DE"
+  "$HOME/.local/share/applications"
+  /usr/share/applications
+  /usr/local/share/applications
+  "$HOME/.local/share/flatpak/exports/share/applications"
+  /var/lib/flatpak/exports/share/applications
+)
+
+# First non-localized value of a key in a .desktop file (e.g. Name, not Name[de]).
+field() { # <file> <key>
+  [ -f "$1" ] || return 1
+  grep -m1 "^$2=" "$1" 2>/dev/null | cut -d= -f2-
+}
+
+# Locate a .desktop file by basename across APPDIRS.
+find_desktop() { # <basename.desktop>
+  local d
+  for d in "${APPDIRS[@]}"; do
+    [ -f "$d/$1" ] && { printf '%s\n' "$d/$1"; return 0; }
+  done
+  return 1
+}
+
+# Prettify a bare id when no .desktop Name is found (org.kde.dolphin -> Dolphin).
+prettify() { # <id-without-.desktop>
+  local s="$1"
+  s="${s##*.}"                       # drop reverse-DNS prefix if any
+  s="${s//-/ }"; s="${s//_/ }"
+  printf '%s\n' "$s" | awk '{for(i=1;i<=NF;i++)$i=toupper(substr($i,1,1)) substr($i,2)}1'
+}
+
+# Display name for a launcher URL from the taskbar config.
+name_for_url() { # <launcher-url>
+  local url="$1" base path name
+  case "$url" in
+    preferred://*) prettify "${url#preferred://}"; return ;;
+    file://*)      path="${url#file://}"; name="$(field "$path" Name)"
+                   [ -n "$name" ] && { printf '%s\n' "$name"; return; }
+                   base="$(basename "$path")" ;;
+    applications:*) base="${url#applications:}" ;;
+    *)             base="$url" ;;
+  esac
+  path="$(find_desktop "$base")" && name="$(field "$path" Name)"
+  [ -n "${name:-}" ] && { printf '%s\n' "$name"; return; }
+  prettify "${base%.desktop}"
+}
+
+# Key sequence bound to a given desktop id, if any (from the global-shortcuts conf).
+key_for_id() { # <id.desktop>
+  [ -f "$KBD" ] || return 0
+  awk -v id="$1" '
+    /^[[:space:]]*#/ {next}
+    { gsub(/\r/,""); if ($1==id && NF>=2){ $1=""; sub(/^[[:space:]]+/,""); print; exit } }
+  ' "$KBD"
+}
+
+out=""
+add() { out+="$1"$'\n'; }
+
+add "MY SHORTCUTS"
+add "Custom KDE keyboard shortcuts and launchers (source: my-system)."
+add ""
+
+# --- Keyboard shortcuts -----------------------------------------------------
+add "══ KEYBOARD SHORTCUTS ══"
+add ""
+if [ -f "$KBD" ]; then
+  while read -r id key; do
+    [ -n "$id" ] || continue
+    case "$id" in \#*) continue ;; esac
+    [ -n "$key" ] || continue
+    name="$(field "$DE/$id" Name)"; [ -n "$name" ] || name="$(prettify "${id%.desktop}")"
+    comment="$(field "$DE/$id" Comment)"
+    add "  $key  —  $name"
+    [ -n "$comment" ] && add "        $comment"
+    add ""
+  done < "$KBD"
+else
+  add "  (none configured)"
+  add ""
+fi
+
+# --- Taskbar groups ---------------------------------------------------------
+add "══ TASKBAR GROUPS ══"
+add "  Shown per monitor; each launcher hides while its app has a visible window."
+add ""
+if [ -f "$GROUPS_CONF" ]; then
+  conn=""; grp=""
+  while IFS= read -r raw; do
+    line="${raw%$'\r'}"
+    trimmed="${line#"${line%%[![:space:]]*}"}"      # left-trim
+    case "$trimmed" in ''|\#*) continue ;; esac
+    if [[ "$trimmed" =~ ^\[(.+)\]$ ]]; then
+      conn="${BASH_REMATCH[1]}"; grp=""; continue
+    fi
+    case "$trimmed" in
+      show-minimized-tasks*) continue ;;
+      group\ *)
+        grp="${trimmed#group }"
+        add "  [$conn] $grp"
+        continue ;;
+      *)
+        [ -n "$grp" ] || continue
+        add "    • $(name_for_url "$trimmed")"
+        ;;
+    esac
+  done < "$GROUPS_CONF"
+  add ""
+else
+  add "  (none configured)"
+  add ""
+fi
+
+# --- All launchers ----------------------------------------------------------
+add "══ ALL LAUNCHERS ══"
+add "  Every clickable app launcher (menu + desktop). [Key] marks a keyboard binding."
+add ""
+# Collect "Name|key|Comment" so we can sort case-insensitively by Name.
+rows=()
+for f in "$DE"/*.desktop; do
+  [ -e "$f" ] || continue
+  name="$(field "$f" Name)"; [ -n "$name" ] || name="$(basename "$f" .desktop)"
+  comment="$(field "$f" Comment)"
+  key="$(key_for_id "$(basename "$f")")"
+  rows+=("$name|$key|$comment")
+done
+while IFS='|' read -r name key comment; do
+  [ -n "$name" ] || continue
+  if [ -n "$key" ]; then add "  • $name   [$key]"; else add "  • $name"; fi
+  [ -n "$comment" ] && add "        $comment"
+done < <(printf '%s\n' "${rows[@]}" | sort -f)
+
+# --- Show it ----------------------------------------------------------------
+tmp="$(mktemp --tmpdir my-shortcuts.XXXXXX.txt)"
+trap 'rm -f "$tmp"' EXIT
+printf '%s' "$out" > "$tmp"
+
+if command -v kdialog >/dev/null 2>&1; then
+  kdialog --title "My Shortcuts" --geometry 780x680 --textbox "$tmp" 780 680
+else
+  # Headless / no-kdialog fallback: just print it.
+  cat "$tmp"
+fi
