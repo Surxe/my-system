@@ -86,8 +86,14 @@ to `false`.
 
 - **HDMI-A-1**: `coding` (code, github-desktop, claude-dev-split, konsole),
   `media` (obs, kdenlive, pinta).
-- **DP-2**: `firefox` (dolphin, discord, firefox, steam), plus the empty
-  task manager (`show-minimized-tasks false` — shows all windows).
+- **DP-2**: `firefox` (dolphin, discord, firefox, steam, my-shortcuts), plus the
+  empty task manager (`show-minimized-tasks false` — shows all windows).
+
+The `my-shortcuts` launcher (question-mark icon, no keyboard binding) pops up a
+kdialog cheatsheet of every custom shortcut — keyboard bindings, taskbar groups,
+and all launchers with their descriptions. It reads the my-system repo at run
+time (`users/ethan/localbin/my-shortcuts`), so the list stays accurate as
+shortcuts change.
 
 ## Files
 

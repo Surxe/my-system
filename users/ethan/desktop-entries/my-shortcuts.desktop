@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: my-system  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=My Shortcuts
+Comment=Show all my custom keyboard shortcuts and app launchers
+Exec=/home/ethan/.local/bin/my-shortcuts
+Icon=dialog-question
+Terminal=false
+Categories=Utility;
