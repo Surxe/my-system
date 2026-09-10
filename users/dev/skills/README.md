@@ -28,6 +28,10 @@ skills/
 - **brainstorm** — divergent precursor to `/plan`. Given a feature idea, surfaces
   adjacent ideas, pros/cons, and open questions in one sharp pass, ending with a
   nudge to go deeper. Instructions-only (no helper script).
+- **valheim-mod** — add, update, or remove a BepInEx mod for Valheim. Shares the
+  game/BepInEx paths and the dev->ethan boundary (stage in
+  `/srv/dev/scratch/valheim-mods/`, hand ethan a `!bash` command), plus the
+  Thunderstore resolve/download/verify flow. Instructions-only.
 
 ## Adding a skill
 
