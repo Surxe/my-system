@@ -1,9 +1,11 @@
 # dev/skills — Claude Code skills for the `dev` user
 
-Version-controlled [Claude Code skills](https://docs.claude.com/en/docs/claude-code).
-`users/install.sh` deploys this directory to `~dev/.claude/skills/` (dev-tier:
-copied, no review gate — these are dev's own files), so each skill becomes
-available in every `dev` Claude session as `/<skill-name>`.
+Version-controlled agent skills (the same `SKILL.md` format Claude Code and the
+DeepSeek Harness both read). `users/install.sh` deploys this directory to
+`~dev/.agents/skills/` (dev-tier: copied, no review gate — these are dev's own
+files), then symlinks `~dev/.claude/skills` to it; the DeepSeek Harness reads
+`~dev/.agents/skills` natively. Each skill becomes available in every `dev`
+session as `/<skill-name>`.
 
 ```
 skills/
@@ -38,7 +40,7 @@ skills/
 1. Create `skills/<name>/SKILL.md` (with `name:` / `description:` frontmatter).
 2. Add any helper scripts alongside it; keep them `chmod +x`.
 3. Run `users/install.sh` (as ethan) to deploy, or copy `skills/<name>/` into
-   `~dev/.claude/skills/` for a quick local test.
+   `~dev/.agents/skills/` for a quick local test.
 
 Deploy is **additive** — removing a skill here does not delete it from
-`~dev/.claude/skills/`; remove it there by hand if needed.
+`~dev/.agents/skills/`; remove it there by hand if needed.

@@ -8,7 +8,7 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 DEV_ENV_REPO="${REPO_ROOT}/../dev-env"
 [ -d "$DEV_ENV_REPO" ] || { say "dev-env-layer: no dev-env repo at $DEV_ENV_REPO — skipping"; return 0; }
 
-say "== deploy shared dev-env layer (-> ~dev/.claude / ~dev/.bashrc.d) =="
+say "== deploy shared dev-env layer (-> ~dev/.agents + ~/.claude symlinks / ~dev/.bashrc.d / ~dev/.dsh) =="
 if [ "$ME" = dev ]; then
     "$DEV_ENV_REPO/install.sh" --host workstation
 else

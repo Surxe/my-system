@@ -4,7 +4,7 @@ Sourced by dev's `~/.bashrc` loader. Two sources feed `~dev/.bashrc.d/`, both as
 **copy** and both **additive** (they refresh/add, never prune), so they coexist:
 
 - **Portable fragments** live in the shared `dev-env` repo and are deployed by the
-  `dev-env-layer` step (e.g. `10-claude.sh`, the `cc` launcher). They are *not*
+  `dev-env-layer` step (e.g. `10-agents.sh`, the `cc`/`ds` launchers). They are *not*
   checked in here — they ship to every box.
 - **Box-specific fragments** live in *this* dir and are deployed by
   `../../install.sh`'s `dev-bashrc` step (`deploy_dev_bashrc`). Unlike ethan's
@@ -13,7 +13,7 @@ Sourced by dev's `~/.bashrc` loader. Two sources feed `~dev/.bashrc.d/`, both as
 
 | File | Source | Contains |
 | --- | --- | --- |
-| `10-claude.sh` | dev-env (portable) | `cc` launcher (`claude --dangerously-skip-permissions`) as a relaunch loop that pairs with the `new` bin to start a fresh session without inheriting the `/rename` name |
+| `10-agents.sh` | dev-env (portable) | `cc` launcher (`claude --dangerously-skip-permissions`) + `ds` launcher (`dsh --profile dsh-tui`) + the mouse-release export |
 | `15-todo.sh` | this repo (box-specific) | todo cross-box sync env (`TODO_HUB_REMOTE`, `TODO_CLASSIFY_REMOTE`, remote classify cmd) |
 | `20-hs.sh` | this repo (box-specific) | `hs` — key-authenticated SSH into the home-server (interactive shell, or `hs cc` to land in Claude on the box) |
 

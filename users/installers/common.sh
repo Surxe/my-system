@@ -19,7 +19,38 @@ ME="$(id -un)"
 DEV_HOME="$(getent passwd dev   | cut -d: -f6)"
 ETHAN_HOME="$(getent passwd ethan | cut -d: -f6)"
 
+# Neutral agent root + the DeepSeek Harness home. Shared content (skills, memory,
+# the box's global AGENTS.md) lives in ~/.agents; Claude Code reads it through
+# symlinks (ensure_agents_symlink below), the DeepSeek Harness reads skills from
+# ~/.agents/skills natively and memory through the `memory-standard` plugin rooted
+# at $DSH_HOME_DIR/memory.
+AGENTS_DIR="$DEV_HOME/.agents"
+CLAUDE_DIR="$DEV_HOME/.claude"
+DSH_HOME_DIR="$DEV_HOME/.dsh"
+DEV_ENV_REPO="$REPO_ROOT/../dev-env"
+
 say(){ printf '%s\n' "$*"; }
+
+# ensure_agents_symlink: point a live ~/.claude/~/.dsh path at a neutral
+# ~/.agents target (idempotent; a pre-existing real file/dir is moved aside to
+# <path>.pre-agents rather than deleted, so the old copy-into-~/.claude layout is
+# migrated without data loss).
+ensure_agents_symlink() {   # $1 = target (must exist), $2 = link path
+    local target="$1" link="$2"
+    [ -e "$target" ] || [ -L "$target" ] || { say "symlink: target missing: $target"; return 1; }
+    if [ -L "$link" ]; then
+        [ "$(readlink "$link")" = "$target" ] && return 0
+        rm -f "$link"
+    elif [ -e "$link" ]; then
+        local bak="$link.pre-agents"
+        rm -rf "$bak"
+        mv "$link" "$bak"
+        say "symlink: moved existing $link -> $bak"
+    fi
+    mkdir -p "$(dirname "$link")"
+    ln -s "$target" "$link"
+    say "symlink: $link -> $target"
+}
 
 # The ethan-approved baseline to diff privileged files against: the current
 # branch's upstream, else origin/HEAD's default branch, else a sane fallback.

@@ -7,8 +7,9 @@
 #   2. Assemble CLAUDE.md from CLAUDE.md.blueprint, replacing each whole-line
 #      {{token}} with the contents of sections/<token>.md.
 #
-# The resulting CLAUDE.md is intended to be symlinked to dev's global config:
-#   ln -s /srv/dev/repos/my-system/users/dev/CLAUDE.md ~/.claude/CLAUDE.md
+# The resulting CLAUDE.md is installed (copied) to ~/.agents/AGENTS.md by
+# users/installers/dev-claude-md.sh, which symlinks ~/.claude/CLAUDE.md and
+# ~/.dsh/AGENTS.md to it (Claude Code + DeepSeek Harness global instructions).
 #
 # Add a new section later by (a) writing a generator that emits
 # sections/<name>.md and (b) adding {{<name>}} to the blueprint. Register the

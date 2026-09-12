@@ -7,9 +7,9 @@ plus auto-generated sections.
 
 ```
 CLAUDE.md.blueprint ──┐
-                      ├─► build-claude-md.sh ─► CLAUDE.md ─(symlink)─► ~/.claude/CLAUDE.md
-sections/*.md ────────┘        ▲
-      ▲                        │
+                      ├─► build-claude-md.sh ─► CLAUDE.md ─(copy)─► ~/.agents/AGENTS.md
+sections/*.md ────────┘        ▲                                ├─(symlink)─► ~/.claude/CLAUDE.md
+      ▲                        │                                └─(symlink)─► ~/.dsh/AGENTS.md
       └── scripts/generate-*.sh (run in phase 1)
 ```
 
@@ -35,8 +35,15 @@ blueprint or the generators instead.
 
 ## Wiring to dev's global config
 
+`dev-claude-md.sh` installs the built `CLAUDE.md` as `~/.agents/AGENTS.md` (the
+neutral agent root) and symlinks both Claude's and the DeepSeek Harness's global
+instruction path to it:
+
 ```bash
-ln -s /srv/dev/repos/my-system/users/dev/CLAUDE.md ~/.claude/CLAUDE.md
+# manual equivalent:
+cp /srv/dev/repos/my-system/users/dev/CLAUDE.md ~/.agents/AGENTS.md
+ln -sf ~/.agents/AGENTS.md ~/.claude/CLAUDE.md
+ln -sf ~/.agents/AGENTS.md ~/.dsh/AGENTS.md
 ```
 
 ## Adding a new section

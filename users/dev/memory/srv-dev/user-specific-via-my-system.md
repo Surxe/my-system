@@ -8,9 +8,9 @@ metadata:
   modified: 2026-08-10T04:16:16.696Z
 ---
 
-New **skills, shell aliases/functions, desktop shortcuts, status bars, or anything user-specific** are authored in the **my-system** repo (`/srv/dev/repos/my-system`) and wired into `install.sh` — never created or edited directly in the user's live files (`~/.claude/`, `~/.bashrc.d/`, etc.).
+New **skills, shell aliases/functions, desktop shortcuts, status bars, or anything user-specific** are authored in the **my-system** repo (`/srv/dev/repos/my-system`) and wired into `install.sh` — never created or edited directly in the user's live files (`~/.agents/`, `~/.bashrc.d/`, etc.).
 
-Known repo locations: Claude skills live under `users/dev/skills/<name>/SKILL.md`; Claude memory files under `users/dev/memory/<project>/` (e.g. `srv-dev/`) — see [[memory-files-edit-in-repo]]; shell helpers under `users/ethan/.bashrc.d/`; desktop launchers under `users/ethan/desktop-entries/`. The deployer is `/srv/dev/repos/my-system/users/install.sh`.
+Known repo locations: skills live under `users/dev/skills/<name>/SKILL.md` (deployed to `~/.agents/skills`, shared by Claude Code and the DeepSeek Harness); memory files under `users/dev/memory/<project>/` (e.g. `srv-dev/`) — see [[edit-in-repo]]; shell helpers under `users/ethan/.bashrc.d/`; desktop launchers under `users/ethan/desktop-entries/`. The deployer is `/srv/dev/repos/my-system/users/install.sh`.
 
 **Why:** the repo is dev-writable and reviewed; the live home files are the deploy target and carry a verification/consent boundary. Editing home directly bypasses that boundary and drifts from the source of truth. Same principle as [[bashrc-edit-workflow]] and [[no-symlink-repo-to-home]], generalized to all user-specific artifacts.
 
