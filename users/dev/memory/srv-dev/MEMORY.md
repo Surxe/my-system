@@ -1,6 +1,6 @@
 # Memory index — my-system (project: /srv/dev)
 
-Workstation-local memories only. Universal memories (shared across both boxes, deployed from `dev-env`) live in `~dev/.claude/projects/-srv-dev/memory/` after `dev-env/install.sh` runs — see the `edit-in-repo` memory for the deploy model.
+Workstation-local memories only. Universal memories (shared across both boxes, deployed from `dev-env`) live in `~dev/.agents/memory/` (symlinked to `~dev/.claude/projects/-srv-dev/memory`) after `dev-env/install.sh` runs — see the `edit-in-repo` memory for the deploy model.
 
 - [MangoHud Debian no-NVML](mangohud-debian-no-nvml.md) — Debian's mangohud lacks NVML → NVIDIA GPU% stuck at 0%; fix is upstream install
 - [BT headphone X11 relink](bt-headphone-x11-relink.md) — "X11" headphone page-timeouts on Debian after Windows use; remove + re-pair fixes it

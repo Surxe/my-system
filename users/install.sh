@@ -10,9 +10,9 @@
 # ships freshly-built files. Each installer names its tier in its output.
 #
 # Tiers, by trust level:
-#   dev-tier    users/dev/CLAUDE.md      -> ~dev/.claude/CLAUDE.md     (copy; dev's own file)
-#               users/dev/skills/*       -> ~dev/.claude/skills/*      (copy; dev's own files)
-#               users/dev/memory/<proj>/* -> ~dev/.claude/projects/-<proj>/memory/* (copy; dev's own files)
+#   dev-tier    users/dev/CLAUDE.md      -> ~dev/.agents/AGENTS.md     (copy; symlinked to ~dev/.claude/CLAUDE.md + ~dev/.dsh/AGENTS.md)
+#               users/dev/skills/*       -> ~dev/.agents/skills/*      (copy; symlinked to ~dev/.claude/skills; dsh reads ~/.agents/skills)
+#               users/dev/memory/<proj>/* -> ~dev/.agents/memory/* + ~dev/.dsh/memory/* (copy; Claude via symlink, dsh via memory-standard)
 #               users/dev/mcp/*.json     -> dev's Claude MCP servers    (claude mcp reconcile; dev's own config)
 #               users/dev/localbin/*     -> ~dev/.local/bin/*          (copy, 0755; on PATH)
 #               users/dev/.bashrc.d/*    -> ~dev/.bashrc.d/*           (copy; box-specific, additive alongside dev-env's)
@@ -84,8 +84,10 @@ INSTALLERS=(
   ethan-plasmarc           # plasmarc tweaks (tooltip delay) -> ~ethan/.config/plasmarc
   ethan-plasmoids          # local Plasma widgets (launcher-group) -> ethan's ~/.local/share
   ethan-taskbar-groups     # assert launcher-group + minimized-TM config from conf
-  dev-claude-md            # dev's CLAUDE.md via sudo -u dev
-  dev-env-layer            # shared dev config layer (skills pr/merged/brainstorm, cc, statusline, memories) from ../dev-env
+  dev-claude-md            # dev's global instructions -> ~dev/.agents/AGENTS.md (+ ~/.claude/CLAUDE.md, ~/.dsh/AGENTS.md symlinks)
+  dev-skills               # dev's box-local skills -> ~dev/.agents/skills (symlinked into ~/.claude/skills; dsh reads natively)
+  dev-memory               # dev's box-local memory -> ~dev/.agents/memory + ~dev/.dsh/memory (Claude + DeepSeek Harness)
+  dev-env-layer            # shared dev config layer (skills, cc/ds, statusline, memories, dsh plugin) from ../dev-env
   dev-bashrc               # dev's box-specific .bashrc.d modules (todo sync, hs) -> ~dev/.bashrc.d
   dev-mcp                  # dev's Claude MCP servers (reconcile from users/dev/mcp/*.json)
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev

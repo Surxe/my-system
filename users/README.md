@@ -14,7 +14,7 @@ users/
   build.sh          # regenerates generated artifacts (run-builders.sh calls this)
   dev/              # dev-tier: dev's own config (moved from the old dev-user repo)
                     #   build-claude-md.sh assembles CLAUDE.md; install.sh copies it
-    skills/         #   dev's Claude skills -> ~dev/.claude/skills/ (e.g. add-shortcut)
+    skills/         #   dev's agent skills -> ~dev/.agents/skills/ (symlinked to ~dev/.claude/skills; e.g. add-shortcut)
   ethan/            # ethan-tier: files sourced by ethan's shell (run AS ethan)
     .bashrc.d/      #   devrepo/devaccept (40) + TODO 10/20/30 (see its README)
     desktop-entries/ #  *.desktop launchers -> ethan's app menu + ~/Desktop (see /add-shortcut)
