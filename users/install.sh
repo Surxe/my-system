@@ -84,13 +84,9 @@ INSTALLERS=(
   ethan-plasmoids          # local Plasma widgets (launcher-group) -> ethan's ~/.local/share
   ethan-taskbar-groups     # assert launcher-group + minimized-TM config from conf
   dev-claude-md            # dev's CLAUDE.md via sudo -u dev
-  dev-skills               # dev's ~/.claude/skills via sudo -u dev
-  dev-memory               # dev's ~/.claude Claude memory via sudo -u dev
+  dev-env-layer            # shared dev config layer (skills pr/merged/brainstorm, cc, statusline, memories) from ../dev-env
   dev-mcp                  # dev's Claude MCP servers (reconcile from users/dev/mcp/*.json)
-  dev-bashrc               # dev's ~/.bashrc.d fragments (cc launcher) via sudo -u dev
-  dev-gitconfig            # dev's global git author identity (commits credit Surxe) via sudo -u dev
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
-  dev-statusline           # dev's ~/.claude status line + wires settings.json
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
   dev-todo-sync            # dev's todo hub sync: user path/service + 'hub' remote + linger
 )

@@ -25,6 +25,7 @@ Do this by default:
 - **clip-classifier-aws** — `/srv/dev/repos/clip-classifier-aws` (`Surxe/clip-classifier-aws`) — (no description set)
 - **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — Tag, categorize, and query gaming clips via controlled-vocabulary LLM tagging over a shared core - a batch tagger, a query MCP server, a Discord-fit distributor, and an eval suite for the classifier.
 - **CUE4P-BatchExport** — `/srv/dev/repos/CUE4P-BatchExport` (`Surxe/CUE4P-BatchExport`) — Quickly decrypts and exports .uassets using CUE4PARSE
+- **dev-env** — `/srv/dev/repos/dev-env` (`Surxe/dev-env`) — (no description set)
 - **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — Summarize your recent local git commit activity across every repo in a single LLM call, archived per-run as Markdown/HTML and optionally emailed.
 - **home-server** — `/srv/dev/repos/home-server` (`Surxe/home-server`) — (no description set)
 - **media-server** — `/srv/dev/repos/media-server` (`Surxe/media-server`) — (no description set)
