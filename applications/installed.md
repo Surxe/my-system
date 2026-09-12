@@ -11,8 +11,10 @@ sibling files.
 - Python
 - Node / npm
 - .NET SDK
+- DeepSeek Harness (`dsh`) + dsh-TUI (`dsh-tui`/`dst`) — npm-global, [ai-cli.md](ai-cli.md)
 
 (Toolchains: [../development/languages.md](../development/languages.md).)
+(npm-global CLI tools are not captured by `scripts/inventory.sh` — see [ai-cli.md](ai-cli.md).)
 
 ## Gaming
 

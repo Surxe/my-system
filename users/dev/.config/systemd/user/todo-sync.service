@@ -1,0 +1,13 @@
+[Unit]
+Description=todo: pull + push the shared git hub (best-effort)
+Documentation=https://github.com/Surxe/todo
+After=default.target
+
+[Service]
+Type=oneshot
+# Runs as dev, so it uses dev's ~/.ssh/id_todo (the 'todo-hub' alias) to reach the
+# hub — a capture made by ethan still publishes under dev's key. `todo sync` is
+# best-effort (an unreachable hub warns, never fails), so this never blocks or
+# errors a capture. Triggered by todo-sync.path; no [Install] section here.
+ExecStart=%h/.local/bin/todo sync
+TimeoutStartSec=120
