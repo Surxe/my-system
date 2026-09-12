@@ -15,6 +15,7 @@
 #               users/dev/memory/<proj>/* -> ~dev/.claude/projects/-<proj>/memory/* (copy; dev's own files)
 #               users/dev/mcp/*.json     -> dev's Claude MCP servers    (claude mcp reconcile; dev's own config)
 #               users/dev/localbin/*     -> ~dev/.local/bin/*          (copy, 0755; on PATH)
+#               users/dev/.bashrc.d/*    -> ~dev/.bashrc.d/*           (copy; box-specific, additive alongside dev-env's)
 #               (git identity)           -> ~dev/.gitconfig user.*     (git config --global; commits credit Surxe)
 #               (cross-repo) todo/bin/todo -> ~dev/.local/bin/todo     (copy; dev's own home)
 #   ethan-tier  users/ethan/.bashrc.d/*  -> ~ethan/.bashrc.d/*         (copy; runs AS ethan)
@@ -85,6 +86,7 @@ INSTALLERS=(
   ethan-taskbar-groups     # assert launcher-group + minimized-TM config from conf
   dev-claude-md            # dev's CLAUDE.md via sudo -u dev
   dev-env-layer            # shared dev config layer (skills pr/merged/brainstorm, cc, statusline, memories) from ../dev-env
+  dev-bashrc               # dev's box-specific .bashrc.d modules (todo sync, hs) -> ~dev/.bashrc.d
   dev-mcp                  # dev's Claude MCP servers (reconcile from users/dev/mcp/*.json)
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
