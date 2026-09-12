@@ -92,6 +92,7 @@ INSTALLERS=(
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
   dev-statusline           # dev's ~/.claude status line + wires settings.json
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
+  dev-todo-sync            # dev's todo hub sync: user path/service + 'hub' remote + linger
 )
 
 case "$ME" in
