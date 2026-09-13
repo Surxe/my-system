@@ -10,8 +10,10 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 # The SSH key + real hub host/IP live only in dev's ~/.ssh (config alias 'todo-hub'),
 # never in this repo (see users/dev/.bashrc.d/15-todo.sh). The hub URL here is the
 # alias form, so no address is committed.
-TODO_CLONE="/srv/dev/repos/todo"
-HUB_URL="ssh://todo-hub/srv/dev/repos/todo.git"
+# The DATA store is its own repo (todo-store), synced only over the hub — never
+# GitHub. The `todo` code repo goes to GitHub separately and needs no hub remote.
+TODO_CLONE="/srv/dev/repos/todo-store"
+HUB_URL="ssh://todo-hub/srv/dev/repos/todo-store.git"
 
 as_dev() { if [ "$ME" = dev ]; then "$@"; else sudo -u dev "$@"; fi; }
 
@@ -34,9 +36,14 @@ deploy_dev_todo_sync() {
         else
             as_dev git -C "$TODO_CLONE" remote add hub "$HUB_URL"
         fi
-        say "dev-tier: todo clone 'hub' remote -> $HUB_URL"
+        say "dev-tier: todo-store 'hub' remote -> $HUB_URL"
+    elif as_dev git clone -q "$HUB_URL" "$TODO_CLONE" 2>/dev/null; then
+        # Fresh box: clone the store from the hub, and mark it group-shared so both
+        # dev and ethan can commit (mirrors the store's dual-writer perms).
+        as_dev git -C "$TODO_CLONE" config core.sharedRepository group
+        say "dev-tier: cloned todo-store from $HUB_URL"
     else
-        say "dev-todo-sync: $TODO_CLONE is not a git clone yet — set up the hub remote at cutover"
+        say "dev-todo-sync: could not reach $HUB_URL — create the store hub first, then re-run"
     fi
 
     # dev is headless (no login session): linger so the path unit runs at boot.
