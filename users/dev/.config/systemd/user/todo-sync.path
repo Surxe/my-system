@@ -6,7 +6,7 @@ Documentation=https://github.com/Surxe/todo
 # .git/logs/HEAD is appended on every commit, and every todo mutation auto-commits
 # — so this fires todo-sync.service after each capture/status change ("push on
 # add"). Watching the reflog catches all commits regardless of loose/packed refs.
-PathModified=/srv/dev/repos/todo/.git/logs/HEAD
+PathModified=/srv/dev/repos/todo-store/.git/logs/HEAD
 Unit=todo-sync.service
 
 [Install]
