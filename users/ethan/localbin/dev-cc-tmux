@@ -1,12 +1,14 @@
 #!/usr/bin/env bash
-# dev-cc-tmux — open a tmux session in a "1x3+2" layout:
+# dev-cc-tmux — open a tmux session in a "2 local + 1 remote" layout:
 #
-#   +-----------+-----------+-----------+   top 80%: three side-by-side
-#   |  dev-cc   |  dev-cc   |  dev-cc   |   columns, each running dev-cc
-#   +-----------+-----------+-----------+   (devsh + Claude Code)
-#   | ethan shell |   devsh (dev shell) |   bottom 20%: left half = plain
-#   +-------------+---------------------+   ethan shell (cwd=$HOME); right
-#                                          half = dev shell (devsh, NOT cc)
+#   +-----------+-----------+-----------+   top ~78%: three side-by-side columns.
+#   |  dev-cc   |  dev-cc   |  hs cc    |   left + mid run dev-cc (local devsh +
+#   +-----------+-----------+-----------+   Claude Code); right runs Claude Code
+#   | ethan sh  |  devsh    |  hs       |   on the home-server over ssh (`hs cc`).
+#   +-----------+-----------+-----------+   bottom ~22%: a plain shell under each
+#                                          column, on the SAME host as the column
+#                                          above it — ethan (cwd=$HOME), local dev
+#                                          (devsh), and home-server (hs).
 #
 # Meant to be launched inside a Konsole window:
 #
@@ -17,39 +19,55 @@
 # dev-tree edits can't execute as ethan without a review-gated deploy.
 #
 # Konsole's own layout format can't carry a per-pane command (it only stores
-# SessionRestoreId), so tmux does the splitting. Each top pane runs dev-cc,
+# SessionRestoreId), so tmux does the splitting. Each local top pane runs dev-cc,
 # which ends in `exec bash`, so a pane stays alive as a dev shell after Claude
-# exits. The bottom pane runs no command, so tmux starts ethan's default shell.
+# exits. The remote top pane runs `hs cc`; `hs` now mirrors `devsh` (it appends
+# `exec bash` on the far side), so that pane stays alive as a home-server shell
+# after Claude exits too. Bottom panes run no local user hop for ethan, `devsh`
+# for local dev, and `hs` for the home-server shell.
 #
-# Runs AS ethan; dev-cc hops to the dev user via devsh/sudo. The bottom pane
-# stays as ethan (no user hop). tmux runs on ethan's default socket; the session
-# name is PID-unique so repeated launches don't collide.
+# Runs AS ethan; dev-cc hops to the dev user via devsh/sudo, and `hs`/`hs cc`
+# reach the home-server as dev over ssh (key auth from dev's ~/.ssh/config).
+# The bottom-left pane stays as ethan (no user hop). tmux runs on ethan's default
+# socket; the session name is PID-unique so repeated launches don't collide.
 set -uo pipefail
 
 # The deployed companion in ethan's own ~/.local/bin (a COPY, not the repo tree).
 launcher="$HOME/.local/bin/dev-cc"
+# Remote Claude column: reach the home-server and start Claude Code there. `hs`
+# and the ssh key live on the DEV side (dev's ~/.bashrc.d + ~/.ssh), and these
+# panes run AS ethan, so we hop ethan->dev with `devsh` first (the same hop the
+# local columns use), then `hs cc` from the dev shell ssh's to the server. Runs
+# through an interactive ethan shell (`bash -ic`) so `devsh` resolves; `hs cc`
+# starts Claude on the server and drops to a remote shell when it exits.
+remote="bash -ic 'devsh hs cc'"
 session="dev-cc-$$"
 
-# Pane 0: top region, first Claude column (full width for now).
+# Pane 0: top region, first local Claude column (full width for now).
 tmux new-session -d -s "$session" -c "$HOME" "$launcher"
 top_left=$(tmux display-message -p -t "$session" '#{pane_id}')
 
-# Split off the full-width bottom region (27% tall): a plain ethan shell at
+# Split off the full-width bottom region (~22% tall): a plain ethan shell at
 # $HOME (no cmd → default login shell, no Claude). The new pane becomes active;
-# capture it as the bottom-left, then halve it horizontally.
-tmux split-window -v -l 20% -t "$top_left" -c "$HOME"
+# capture it as the bottom-left before carving the rest.
+tmux split-window -v -l 22% -t "$top_left" -c "$HOME"
 bot_left=$(tmux display-message -p -t "$session" '#{pane_id}')
 
-# Right half of the bottom region: a dev shell via devsh, but NOT Claude. Runs
-# through an interactive ethan shell (`bash -ic`) so `devsh` is defined; devsh
-# hops to the dev user and drops to an interactive dev prompt (no `cc`).
-tmux split-window -h -l 50% -t "$bot_left" "bash -ic devsh"
-
-# Carve the top region (still top_left, now full width & 73% tall) into three
-# equal Claude columns. First cut takes the right two-thirds, then halve it.
+# Carve the top region (still top_left, now full width) into three columns: two
+# local dev-cc columns and one remote `hs cc` column. First cut takes the right
+# two-thirds, then halve it so the widths land ~34/33/33.
 tmux split-window -h -l 66% -t "$top_left" -c "$HOME" "$launcher"
 top_mid=$(tmux display-message -p -t "$session" '#{pane_id}')
-tmux split-window -h -l 50% -t "$top_mid"  -c "$HOME" "$launcher"
+tmux split-window -h -l 50% -t "$top_mid"  -c "$HOME" "$remote"
+
+# Carve the bottom region into three columns aligned under the top ones: local
+# ethan shell (already bot_left) | local dev shell (devsh) | home-server shell
+# (devsh hs — same ethan->dev->home-server hop as the remote column above). Both
+# run through an interactive ethan shell so `devsh` resolves.
+tmux split-window -h -l 66% -t "$bot_left" "bash -ic devsh"
+bot_mid=$(tmux display-message -p -t "$session" '#{pane_id}')
+tmux split-window -h -l 50% -t "$bot_mid"  "bash -ic 'devsh hs'"
+
 tmux set-option -t "$session" mouse on          # click-to-focus + drag-resize
 # Bridge mouse selections to the system clipboard. With `mouse on`, tmux
 # captures drag-selections into its own buffer; without this they never reach
