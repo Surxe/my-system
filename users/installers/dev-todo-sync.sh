@@ -36,8 +36,13 @@ deploy_dev_todo_sync() {
         else
             as_dev git -C "$TODO_CLONE" remote add hub "$HUB_URL"
         fi
+        # Ensure master tracks hub/master. A clone made via `git clone` gets this for
+        # free; one made via `git init` + `remote add` does not, so set it here so
+        # plain `git pull`/status work cleanly (sync_push no longer relies on it).
+        as_dev git -C "$TODO_CLONE" fetch -q hub 2>/dev/null || true
+        as_dev git -C "$TODO_CLONE" branch --set-upstream-to=hub/master master 2>/dev/null || true
         say "dev-tier: todo-store 'hub' remote -> $HUB_URL"
-    elif as_dev git clone -q "$HUB_URL" "$TODO_CLONE" 2>/dev/null; then
+    elif as_dev git clone -o hub -q "$HUB_URL" "$TODO_CLONE" 2>/dev/null; then
         # Fresh box: clone the store from the hub, and mark it group-shared so both
         # dev and ethan can commit (mirrors the store's dual-writer perms).
         as_dev git -C "$TODO_CLONE" config core.sharedRepository group
