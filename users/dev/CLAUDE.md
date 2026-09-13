@@ -26,7 +26,7 @@ Do this by default:
 - **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — Manual, selective Restic to Backblaze B2 backups for a Linux workstation, with sources split into per-prefix repos in one bucket.
 - **career** — `/srv/dev/repos/career` (`Surxe/career`) — (not found or dev lacks access)
 - **claude-tts** — `/srv/dev/repos/claude-tts` (`Surxe/claude-tts`) — Speak Claude Code's terminal output aloud on Linux — a token-free dev→user audio bridge using Piper TTS and systemd path units.
-- **clip-classifier-aws** — `/srv/dev/repos/clip-classifier-aws` (`Surxe/clip-classifier-aws`) — (no description set)
+- **clip-classifier-aws** — `/srv/dev/repos/clip-classifier-aws` (`Surxe/clip-classifier-aws`) — Serverless, schema-constrained LLM tagger for gaming clips on AWS - Amazon Bedrock (Claude Haiku 4.5) behind Lambda + API Gateway, packaged as a container image and deployed with AWS SAM.
 - **clip-db** — `/srv/dev/repos/clip-db` (`Surxe/clip-db`) — Tag, categorize, and query gaming clips via controlled-vocabulary LLM tagging over a shared core - a batch tagger, a query MCP server, a Discord-fit distributor, and an eval suite for the classifier.
 - **CUE4P-BatchExport** — `/srv/dev/repos/CUE4P-BatchExport` (`Surxe/CUE4P-BatchExport`) — Quickly decrypts and exports .uassets using CUE4PARSE
 - **dev-env** — `/srv/dev/repos/dev-env` (`Surxe/dev-env`) — (no description set)
