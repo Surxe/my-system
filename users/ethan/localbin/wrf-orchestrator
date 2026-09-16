@@ -20,13 +20,18 @@
 #
 # This is the review-gated COPY in ethan's ~/.local/bin (deployed by
 # my-system/users/install.sh — ethan-bin.sh copies every localbin file). Args
-# pass through to run.py, e.g.
+# pass through to the pipeline, e.g.
 #   wrf-orchestrator --game-version 2026-08-22
 #   wrf-orchestrator --should-parse true --should-build-site true --game-version 2026-08-22
+#
+# The dev-side half (cd + node/nvm env + exec run.py) lives in the orchestrator
+# repo at bin/run-pipeline. This wrapper stays deliberately thin: it does only
+# the privileged ethan work — read the secrets, hop to dev — and hands off.
 set -uo pipefail
 
 SECRETS="$HOME/.config/wrf-orchestrator/secrets.env"
 REPO="/srv/dev/repos/WRFrontiersDB-Orchestrator"
+ENTRY="$REPO/bin/run-pipeline"
 
 if [ ! -r "$SECRETS" ]; then
     echo "wrf-orchestrator: missing secrets file: $SECRETS" >&2
@@ -39,13 +44,12 @@ fi
 set -a; . "$SECRETS"; set +a
 
 # Hop to dev (fresh initgroups -> render/video for the mapper), preserving only
-# the three secrets. stdin/stdout stay this terminal's TTY so the pipeline's
-# interactive manifest-date prompt still works. The inner `_` is $0 so launcher
-# args land in "$@" for run.py.
-sudo -u dev --preserve-env=STEAM_USERNAME,STEAM_PASSWORD,GH_DATA_REPO_PAT -H bash -c '
-    cd /srv/dev/repos/WRFrontiersDB-Orchestrator || exit 1
-    exec .venv/bin/python src/run.py "$@"
-' _ "$@"
+# the three secrets, and exec the repo's dev-side entry directly. -H sets
+# HOME=/home/dev so bin/run-pipeline finds dev's nvm. sudo keeps stdin/stdout on
+# this terminal's TTY, so the pipeline's interactive manifest-date prompt still
+# works. Launcher args pass straight through to run-pipeline.
+sudo -u dev --preserve-env=STEAM_USERNAME,STEAM_PASSWORD,GH_DATA_REPO_PAT -H \
+    "$ENTRY" "$@"
 status=$?
 
 if [ -t 0 ]; then
