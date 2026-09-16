@@ -23,6 +23,7 @@ Do this by default:
 
 ### GitHub-tracked
 
+- **ai-ml-mock-project** — `/srv/dev/repos/ai-ml-mock-project` (`Surxe/ai-ml-mock-project`) — (no description set)
 - **b2-backup** — `/srv/dev/repos/b2-backup` (`Surxe/b2-backup`) — Manual, selective Restic to Backblaze B2 backups for a Linux workstation, with sources split into per-prefix repos in one bucket.
 - **career** — `/srv/dev/repos/career` (`Surxe/career`) — (not found or dev lacks access)
 - **claude-tts** — `/srv/dev/repos/claude-tts` (`Surxe/claude-tts`) — Speak Claude Code's terminal output aloud on Linux — a token-free dev→user audio bridge using Piper TTS and systemd path units.
@@ -32,7 +33,6 @@ Do this by default:
 - **dev-env** — `/srv/dev/repos/dev-env` (`Surxe/dev-env`) — (no description set)
 - **dev-summary** — `/srv/dev/repos/dev-summary` (`Surxe/dev-summary`) — Summarize your recent local git commit activity across every repo in a single LLM call, archived per-run as Markdown/HTML and optionally emailed.
 - **home-server** — `/srv/dev/repos/home-server` (`Surxe/home-server`) — (no description set)
-- **interview-exercise** — `/srv/dev/repos/interview-exercise` (`paul-pratt-108442/interview-exercise`) — (no description set)
 - **media-server** — `/srv/dev/repos/media-server` (`Surxe/media-server`) — (no description set)
 - **my-system** — `/srv/dev/repos/my-system` (`Surxe/my-system`) — My windows-debian dual boot system with Claude skills, KDE shortcuts, Terminal aliases & functions, and so much more for configuring the multi-user permission security suite
 - **ooz** — `/srv/dev/repos/ooz` (`powzix/ooz`) — Open source Kraken / Mermaid / Selkie / Leviathan / LZNA / Bitknit decompressor
@@ -43,7 +43,6 @@ Do this by default:
 - **Surxe** — `/srv/dev/repos/Surxe` (`Surxe/Surxe`) — GitHub profile README - datamining game files into structured, queryable data, and the databases and wikis built around it.
 - **Surxe-dev** — `/srv/dev/repos/Surxe-dev` (`Surxe-dev/Surxe-dev`) — Profile README for the sandboxed Surxe-dev automation account
 - **todo** — `/srv/dev/repos/todo` (`Surxe/todo`) — A central capture system for dev/project ideas, driven from Claude Code sessions or the shell, with deferred claude -p classification.
-- **Valheim.DropThat** — `/srv/dev/repos/Valheim.DropThat` (`ASharpPen/Valheim.DropThat`) — (no description set)
 - **valheim-server** — `/srv/dev/repos/valheim-server` (`Surxe/valheim-server`) — (no description set)
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
 - **wrf-news-research** — `/srv/dev/repos/wrf-news-research` (`Surxe/wrf-news-research`) — (no description set)
@@ -57,6 +56,7 @@ Do this by default:
 
 ### Local-only (no GitHub remote)
 
+- **interview-exercise** — `/srv/dev/repos/interview-exercise` — local-only (no GitHub remote)
 - **pal-venv** — `/srv/dev/repos/pal-venv` — local-only (no GitHub remote)
 - **todo-store** — `/srv/dev/repos/todo-store` — local-only (no GitHub remote)
 - **wgu-ai-masters** — `/srv/dev/repos/wgu-ai-masters` — local-only (no GitHub remote)
