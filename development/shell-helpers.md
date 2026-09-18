@@ -25,12 +25,15 @@ and the two-identity git split in [git-workflow.md](git-workflow.md).
 | `devsafe_ethan [dir]` | Idempotently add `dir` to git `safe.directory` for **ethan** (`~/.gitconfig`). |
 | `devsafe_dev [dir]` | Same, but for **dev** — runs git as `sudo -u dev -H` so it writes `/home/dev/.gitconfig`. |
 | `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b main` + `remote add origin` + empty initial commit + `push -u origin main` (seeds & connects `main` on both sides), perms + both safe-dirs + `devaccept` + `devsh`. |
-| `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devaccept` + `devsh`. Repo must already exist on GitHub. |
+| `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh` (plus `devaccept` only when `<profile>` is `Surxe`). Repo must already exist on GitHub. |
 | `devaccept` | As **dev**: accept any pending `Surxe-dev` repository-collaborator invitations, using the dev PAT from dev's credential store. Idempotent. |
 
 `devrepo` (both modes) refuses to clobber an existing destination and validates its
 argument shape (`clone` needs a `profile/repo` slug; `new` rejects a slug with `/`).
 The two modes share one tail: perms + both safe-dirs + `devaccept` + `cd` + `devsh`.
+`devaccept` runs only when the repo is owned by `Surxe` (the account whose repos
+invite `Surxe-dev`) — `new` always is, and `clone` gates on the `<profile>` slug —
+so cloning a third-party repo skips the invite poll entirely.
 
 ### Auto-accepting the `Surxe-dev` invitation (`devaccept`)
 

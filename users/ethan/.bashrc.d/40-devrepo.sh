@@ -41,13 +41,14 @@ devaccept() {
 #   devrepo new   <reponame> [--private|--public]   (default: public)
 #   devrepo clone <profile>/<reponame>              (must already exist on GitHub)
 devrepo() {
-    local mode="${1:-}" dest reponame slug url
+    local mode="${1:-}" dest reponame slug url owner
     shift 2>/dev/null || true
 
     case "$mode" in
         new)
             reponame="${1:-}"
             dest="/srv/dev/repos/$reponame"
+            owner="Surxe"   # devscaffold always creates under Surxe
             if [ -z "$reponame" ] || [[ "$reponame" == */* ]]; then
                 echo "usage: devrepo new <reponame> [--private|--public]  (default: public)" >&2; return 1
             fi
@@ -65,6 +66,7 @@ devrepo() {
         clone)
             slug="${1%.git}"
             reponame="${slug##*/}"
+            owner="${slug%%/*}"
             dest="/srv/dev/repos/$reponame"
             url="https://github.com/${slug}.git"
             if [ -z "$slug" ] || [ "$slug" = "$reponame" ]; then
@@ -78,11 +80,16 @@ devrepo() {
             ;;
     esac
 
-    # shared tail: perms + both safe-dirs + accept invite + jump in as dev
+    # shared tail: perms + both safe-dirs + accept invite + jump in as dev.
+    # Only repos under Ethan's own Surxe account invite Surxe-dev as a
+    # collaborator, so only those have an invite to accept — skip devaccept
+    # (and its 20s poll) when cloning a repo owned by anyone else.
     devperms "$dest"      || return 1
     devsafe_ethan "$dest" || return 1
     devsafe_dev "$dest"   || return 1
-    devaccept "$reponame" || echo "warning: could not auto-accept invitations — accept manually" >&2
+    if [ "$owner" = "Surxe" ]; then
+        devaccept "$reponame" || echo "warning: could not auto-accept invitations — accept manually" >&2
+    fi
     cd "$dest" || return 1
     devsh
 }
