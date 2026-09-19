@@ -2,7 +2,7 @@
 # b2-backup — desktop-launcher entry point for the Restic -> Backblaze B2 backup.
 #
 # Runs AS ethan (the live KDE session user) and STAYS as ethan — unlike the
-# wrf-news-snapshot launcher, it must NOT drop to `dev`: only ethan can read every
+# dev-summary launcher, it must NOT drop to `dev`: only ethan can read every
 # backup source (~/Documents, ~/.ssh) plus the shared /srv/dev/* files. Running as
 # `dev` would silently skip the home-dir sources (see b2-backup/README.md).
 #
