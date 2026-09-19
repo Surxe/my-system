@@ -8,7 +8,7 @@
 # own repo's code is not an escalation. Only THIS thin launcher runs as ethan,
 # and it is a COPY in ethan's ~/.local/bin (deployed + review-gated by
 # my-system/users/install.sh), never the dev-writable repo tree. Same shape as
-# wrf-news-snapshot: a copied ethan launcher that drops to dev via the devsh
+# merge-clip-audio: a copied ethan launcher that drops to dev via the devsh
 # sudo bridge.
 #
 # Depends on: passwordless `sudo -u dev` for ethan (the devsh bridge) and the

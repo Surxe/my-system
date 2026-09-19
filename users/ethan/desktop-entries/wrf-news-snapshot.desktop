@@ -1,9 +1,0 @@
-[Desktop Entry]
-# source: wrf-news-research  # via /add-shortcut (do not hand-edit; regenerate)
-Type=Application
-Name=WRF News Snapshot
-Comment=Snapshot the War Robots: Frontiers news feed into data/<today>/
-Exec=/home/ethan/.local/bin/wrf-news-snapshot
-Icon=/srv/dev/repos/wrf-news-research/assets/icon.svg
-Terminal=true
-Categories=Utility;

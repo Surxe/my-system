@@ -45,7 +45,6 @@ Do this by default:
 - **todo** — `/srv/dev/repos/todo` (`Surxe/todo`) — A central capture system for dev/project ideas, driven from Claude Code sessions or the shell, with deferred claude -p classification.
 - **valheim-server** — `/srv/dev/repos/valheim-server` (`Surxe/valheim-server`) — (no description set)
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
-- **wrf-news-research** — `/srv/dev/repos/wrf-news-research` (`Surxe/wrf-news-research`) — (no description set)
 - **WRFrontiersDB-Data** — `/srv/dev/repos/WRFrontiersDB-Data` (`Surxe/WRFrontiersDB-Data`) — War Robots Frontiers Database Data Archive
 - **WRFrontiersDB-Design** — `/srv/dev/repos/WRFrontiersDB-Design` (`Surxe/WRFrontiersDB-Design`) — (no description set)
 - **WRFrontiersDB-Orchestrator** — `/srv/dev/repos/WRFrontiersDB-Orchestrator` (`Surxe/WRFrontiersDB-Orchestrator`) — Orchestrates the entire War Robots Frontiers data ecosystem — chaining the Exporter, Parser, Data, Site, and shared Design repos into a one-command, reproducible patch-day pipeline feeding multiple front-ends (Site + Discount Visualizer).
@@ -53,6 +52,7 @@ Do this by default:
 - **WRFrontiersDB-Site** — `/srv/dev/repos/WRFrontiersDB-Site` (`Surxe/WRFrontiersDB-Site`) — War Robots Frontiers DB Website via Astro
 - **WRFrontiers-Discount-Visualizer** — `/srv/dev/repos/WRFrontiers-Discount-Visualizer` (`Surxe/WRFrontiers-Discount-Visualizer`) — Creates a visualization of the weekly discounts
 - **WRFrontiers-Exporter** — `/srv/dev/repos/WRFrontiers-Exporter` (`Surxe/WRFrontiers-Exporter`) — Exports assets for War Robots: Frontiers
+- **WRFrontiers-News-Scraper** — `/srv/dev/repos/WRFrontiers-News-Scraper` (`Surxe/WRFrontiers-News-Scraper`) — (no description set)
 
 ### Local-only (no GitHub remote)
 

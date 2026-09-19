@@ -13,7 +13,7 @@
 #     dev-writable clip-db repo (a dev-tree edit must never execute with ethan's
 #     privileges). dev running its own repo's code is not an escalation.
 # So: dialogs here (ethan), merge hopped to dev via the devsh sudo bridge. Same
-# shape as wrf-news-snapshot. Only THIS thin launcher runs as ethan, and it is a
+# shape as dev-summary. Only THIS thin launcher runs as ethan, and it is a
 # COPY in ~/.local/bin (deployed + review-gated by my-system/users/install.sh).
 #
 # Depends on: passwordless `sudo -u dev` for ethan (the devsh bridge), kdialog,
