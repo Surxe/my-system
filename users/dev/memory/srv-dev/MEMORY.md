@@ -5,7 +5,6 @@ Workstation-local memories only. Universal memories (shared across both boxes, d
 - [Active box](active-box.md) — you're on the workstation (hostname `ethan-debian`); box-local memory = box identity
 - [MangoHud Debian no-NVML](mangohud-debian-no-nvml.md) — Debian's mangohud lacks NVML → NVIDIA GPU% stuck at 0%; fix is upstream install
 - [BT headphone X11 relink](bt-headphone-x11-relink.md) — "X11" headphone page-timeouts on Debian after Windows use; remove + re-pair fixes it
-- [steam-price-tracker venv](steam-tracker-venv.md) — run python/pytest via .venv/bin/python in that repo
 - [Clip-tagging MCP](clip-tagging-mcp.md) — gaming-clip tag+query MCP: stack decisions, runs on Linux dev box (clips synced from Windows)
 - [WGU AI masters plan](wgu-ai-masters-plan.md) — enrolling in WGU M.S. SWE (AI) funded by Nelnet tuition assistance; plan in /srv/dev/repos/wgu-ai-masters
 - [ethan bashrc aliases](ethan-bashrc-aliases.md) — ethan's dev-helper shell functions (devsh/devperms/devclone/…), split into ~/.bashrc.d/; documented in system-context repo

@@ -76,7 +76,6 @@ INSTALLERS=(
   todo-ethan               # reviewed todo bin -> ethan's ~/.local/bin (before todo-capture)
   ethan-bin                # PATH executables (todo-capture) -> ethan's ~/.local/bin
   ethan-config             # ~/.config trees (fastfetch, systemd units, ...) -> ethan's ~/.config
-  steam-tracker            # steam-price-tracker: ensure SMTP secret + enable resume watcher
   clip-discord             # clip-db: create Discord post spool + enable queue watcher
   claude-tts               # spoken Claude output: dev tts CLI + piper, ethan player + spool + watchers
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
