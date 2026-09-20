@@ -90,7 +90,7 @@ INSTALLERS=(
   dev-env-layer            # shared dev config layer (skills, cc/ds, statusline, memories, dsh plugin) from ../dev-env
   dev-bashrc               # dev's box-specific .bashrc.d modules (todo sync, hs) -> ~dev/.bashrc.d
   dev-mcp                  # dev's Claude MCP servers (reconcile from users/dev/mcp/*.json)
-  dev-ssh                  # symlink dev's SSH to ethan's copy (one-way read trust)
+  dev-ssh                  # copy ethan's todo/home-server SSH config + key into dev's ~/.ssh
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
   dev-todo-sync            # dev's todo hub sync: user path/service + 'hub' remote + linger
