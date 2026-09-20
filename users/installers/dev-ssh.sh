@@ -24,19 +24,19 @@ deploy_dev_ssh() {
         # Only symlink if ethan's copy exists
         if [ -e "$src" ]; then
             if [ -L "$dst" ]; then
-                # Already a symlink; update target if needed
-                if [ "$(readlink "$dst")" != "$src" ]; then
-                    as_dev rm "$dst"
+                # Already a symlink; verify target
+                local target; target=$(readlink "$dst" 2>/dev/null || true)
+                if [ "$target" != "$src" ]; then
+                    as_dev rm -f "$dst"
                     as_dev ln -s "$src" "$dst"
                 fi
-            elif [ -e "$dst" ]; then
-                # Exists as a file; back it up and symlink instead
-                as_dev mv "$dst" "$dst.pre-ethan-symlink"
-                as_dev ln -s "$src" "$dst"
-                say "dev-ssh: moved $dst -> $dst.pre-ethan-symlink, symlinked to ethan's"
             else
-                # Doesn't exist; create the symlink
+                # File exists (or broken symlink), or doesn't exist at all.
+                # Remove it if present and create the symlink.
+                as_dev rm -f "$dst"
                 as_dev ln -s "$src" "$dst"
+                [ ! -e "$dev_ssh/$file.pre-ethan-symlink" ] || \
+                    say "dev-ssh: replaced $dst with symlink to ethan's"
             fi
         fi
     done

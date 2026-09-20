@@ -31,6 +31,9 @@ DEV_ENV_REPO="$REPO_ROOT/../dev-env"
 
 say(){ printf '%s\n' "$*"; }
 
+# as_dev: run a command as dev (or noop if already dev). Used by dev-tier installers.
+as_dev() { if [ "$ME" = dev ]; then "$@"; else sudo -u dev "$@"; fi; }
+
 # ensure_agents_symlink: point a live ~/.claude/~/.dsh path at a neutral
 # ~/.agents target (idempotent; a pre-existing real file/dir is moved aside to
 # <path>.pre-agents rather than deleted, so the old copy-into-~/.claude layout is
