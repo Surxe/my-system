@@ -15,8 +15,6 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 TODO_CLONE="$TODO_STORE"   # /srv/dev/repos/todo-store (shared var, see common.sh)
 HUB_URL="ssh://todo-hub/srv/dev/repos/todo-store.git"
 
-as_dev() { if [ "$ME" = dev ]; then "$@"; else sudo -u dev "$@"; fi; }
-
 deploy_dev_todo_sync() {
     local srcdir="$REPO_ROOT/users/dev/.config/systemd/user"
     local dstdir="$DEV_HOME/.config/systemd/user"
