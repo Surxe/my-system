@@ -73,6 +73,7 @@ INSTALLERS=(
   run-builders             # regenerate artifacts before shipping them
   root-tier                # host scripts + sudoers drop-ins (sudo)
   ethan-bashrc             # ethan's .bashrc.d modules
+  ethan-ssh                # ethan's SSH config + keys for todo-hub (before todo-ethan/sync)
   todo-ethan               # reviewed todo bin -> ethan's ~/.local/bin (before todo-capture)
   ethan-bin                # PATH executables (todo-capture) -> ethan's ~/.local/bin
   ethan-config             # ~/.config trees (fastfetch, systemd units, ...) -> ethan's ~/.config
@@ -89,6 +90,7 @@ INSTALLERS=(
   dev-env-layer            # shared dev config layer (skills, cc/ds, statusline, memories, dsh plugin) from ../dev-env
   dev-bashrc               # dev's box-specific .bashrc.d modules (todo sync, hs) -> ~dev/.bashrc.d
   dev-mcp                  # dev's Claude MCP servers (reconcile from users/dev/mcp/*.json)
+  dev-ssh                  # symlink dev's SSH to ethan's copy (one-way read trust)
   dev-bin                  # dev's PATH executables (new) -> ~dev/.local/bin via sudo -u dev
   todo-dev                 # copies todo/bin/todo -> dev's ~/.local/bin via sudo -u dev
   dev-todo-sync            # dev's todo hub sync: user path/service + 'hub' remote + linger
