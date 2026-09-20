@@ -12,7 +12,7 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 # alias form, so no address is committed.
 # The DATA store is its own repo (todo-store), synced only over the hub — never
 # GitHub. The `todo` code repo goes to GitHub separately and needs no hub remote.
-TODO_CLONE="/srv/dev/repos/todo-store"
+TODO_CLONE="$TODO_STORE"   # /srv/dev/repos/todo-store (shared var, see common.sh)
 HUB_URL="ssh://todo-hub/srv/dev/repos/todo-store.git"
 
 as_dev() { if [ "$ME" = dev ]; then "$@"; else sudo -u dev "$@"; fi; }
@@ -50,6 +50,15 @@ deploy_dev_todo_sync() {
     else
         say "dev-todo-sync: could not reach $HUB_URL — create the store hub first, then re-run"
     fi
+
+    # dev owns the store today so this is belt-and-suspenders, but assert
+    # safe.directory in dev's global config too (idempotent) so a future re-clone or
+    # ownership change can't silently break dev's commits. Run AS dev (ensure_safe_dir
+    # is a shell fn, so inline the as_dev git config with a dedup guard).
+    if ! as_dev git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$TODO_CLONE"; then
+        as_dev git config --global --add safe.directory "$TODO_CLONE"
+    fi
+    say "dev-tier: git safe.directory asserts $TODO_CLONE"
 
     # dev is headless (no login session): linger so the path unit runs at boot.
     # Needs root; install.sh's operator is ethan/root.

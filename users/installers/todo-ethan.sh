@@ -11,5 +11,11 @@ deploy_todo_ethan() {
     review_gate_in "$TODO_REPO" "$TODO_BASE_REF" "bin/todo" || { say "   skipped todo"; return; }
     install -D -m 0755 "$TODO_BIN" "$ETHAN_HOME/.local/bin/todo"
     say "ethan-tier: installed $ETHAN_HOME/.local/bin/todo"
+
+    # ethan is not the store's owner (owner: dev), so git refuses ops there without
+    # safe.directory -> ethan's captures/dones never commit and block the next pull.
+    # Assert it in ethan's global git config (idempotent). See common.sh TODO_STORE.
+    ensure_safe_dir "$TODO_STORE"
+    say "ethan-tier: git safe.directory asserts $TODO_STORE"
 }
 deploy_todo_ethan

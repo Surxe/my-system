@@ -107,6 +107,22 @@ TODO_REPO="/srv/dev/repos/todo"
 TODO_BIN="$TODO_REPO/bin/todo"
 TODO_BASE_REF="$(git -C "$TODO_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/master)"
 
+# The DATA store is a separate repo (owner dev, group `developers`, group-writable).
+# Because ethan is not its owner, git refuses ops there ("dubious ownership") unless
+# the store is in ethan's git `safe.directory` — without it every ethan-side `todo`
+# git op (commit on capture/done, the read/classify rebase-pull) fails silently and
+# leaves the tree dirty, which then blocks the next pull. The todo installers assert
+# safe.directory for the running user (ensure_safe_dir) to close that.
+TODO_STORE="/srv/dev/repos/todo-store"
+
+# ensure_safe_dir: idempotently add a path to the CURRENT user's global git
+# safe.directory (git has no dedup on --add, so guard first). No-op if already set.
+ensure_safe_dir() {   # $1 = absolute repo path
+    local path="$1"
+    git config --global --get-all safe.directory 2>/dev/null | grep -qxF "$path" && return 0
+    git config --global --add safe.directory "$path"
+}
+
 # --- claude-tts: spoken Claude output. Like `todo`, it lives in its OWN repo and
 # is deployed cross-repo: dev's own files (tts CLI, narrate.py) copied ungated, but
 # ethan-side files (tts-speak + the systemd user units) are review-gated against
