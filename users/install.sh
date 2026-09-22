@@ -100,6 +100,16 @@ case "$ME" in
     ethan|root)
         [ "$DEBUG" = 1 ] && _dbg=" [debug: step timing on]" || _dbg=""
         say "== deploy (operator: $ME)$_dbg =="
+
+        # Run-log: a shared file each step's warn() appends "<step>\t<message>"
+        # records to, so a non-fatal warning emitted deep in a child installer (its
+        # own subprocess — an in-memory list can't reach us) can be replayed in the
+        # end-of-run summary instead of scrolling away. Exported so every
+        # installers/*.sh inherits it; removed on exit.
+        MYSYS_RUN_LOG="$(mktemp "${TMPDIR:-/tmp}/mysys-install.XXXXXX")"
+        export MYSYS_RUN_LOG
+        trap 'rm -f "$MYSYS_RUN_LOG"' EXIT
+
         # Pre-fetch each review-gated repo's origin ONCE for the whole run, then tell
         # children to skip their own fetch (MYSYS_NO_FETCH). Previously every per-file
         # review gate fetched, so N gated files cost N network round trips per step.
@@ -107,18 +117,27 @@ case "$ME" in
         git -C "$TODO_REPO" fetch -q origin 2>/dev/null || true
         git -C "$CLAUDE_TTS_REPO" fetch -q origin 2>/dev/null || true
         export MYSYS_NO_FETCH=1
-        STEP_NAMES=(); STEP_MS=()
+
+        STEP_NAMES=(); STEP_MS=(); FAILED=()
         for name in "${INSTALLERS[@]}"; do
-            if [ "$DEBUG" = 1 ]; then
-                _t0="$(now_ms)"
-                bash "$SCRIPT_DIR/installers/$name.sh"
-                _dt="$(( $(now_ms) - _t0 ))"
-                STEP_NAMES+=("$name"); STEP_MS+=("$_dt")
-                say "   [debug] $name: $(fmt_dur "$_dt")"
-            else
-                bash "$SCRIPT_DIR/installers/$name.sh"
+            export STEP_NAME="$name"        # warn() tags its records with this
+            _t0="$(now_ms)"
+            # Per-installer failure isolation: a non-zero exit is RECORDED and the
+            # deploy CONTINUES. The guarantee is per-installer, not per-command —
+            # each installer's own `set -e` still stops it at its first hard error.
+            # An `if` condition is set -e's standard exemption, so a failing step
+            # never trips THIS orchestrator's set -e.
+            if bash "$SCRIPT_DIR/installers/$name.sh"; then :; else
+                rc=$?
+                FAILED+=("$name (exit $rc)")
+                say "!! step '$name' FAILED (exit $rc) — continuing"
             fi
+            _dt="$(( $(now_ms) - _t0 ))"
+            STEP_NAMES+=("$name"); STEP_MS+=("$_dt")
+            [ "$DEBUG" = 1 ] && say "   [debug] $name: $(fmt_dur "$_dt")"
         done
+        unset STEP_NAME
+
         if [ "$DEBUG" = 1 ]; then
             say ""
             say "== debug: step timings (slowest first) =="
@@ -132,6 +151,24 @@ case "$ME" in
                 printf '   %9s  %s\n' "$(fmt_dur "$ms")" "$nm"
             done
             printf '   %9s  %s\n' "$(fmt_dur "$total_ms")" "TOTAL"
+        fi
+
+        # --- end-of-run summary: replay every warning, then every failed step, so
+        #     neither gets lost in a long deploy's scrollback. Exit non-zero if any
+        #     step failed, so callers/automation can detect a partial deploy. ---
+        if [ -s "$MYSYS_RUN_LOG" ]; then
+            say ""
+            say "== warnings ($(wc -l <"$MYSYS_RUN_LOG" | tr -d ' ')) =="
+            while IFS=$'\t' read -r _step _msg; do
+                printf '   [%s] %s\n' "$_step" "$_msg"
+            done <"$MYSYS_RUN_LOG"
+        fi
+        if [ "${#FAILED[@]}" -gt 0 ]; then
+            say ""
+            say "== FAILED steps (${#FAILED[@]}) =="
+            for f in "${FAILED[@]}"; do say "   $f"; done
+            say "== done (with ${#FAILED[@]} failed step(s)) =="
+            exit 1
         fi
         ;;
     *)

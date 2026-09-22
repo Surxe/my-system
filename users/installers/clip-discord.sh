@@ -35,12 +35,12 @@ deploy_clip_discord() {
     if [ "$ME" = ethan ]; then
         systemctl --user daemon-reload || true
         systemctl --user enable --now clip-discord-watch.path \
-            || say "!! could not enable clip-discord-watch.path"
+            || warn "could not enable clip-discord-watch.path"
     else
         sudo -u ethan XDG_RUNTIME_DIR="/run/user/$uid" systemctl --user daemon-reload || true
         sudo -u ethan XDG_RUNTIME_DIR="/run/user/$uid" systemctl --user \
             enable --now clip-discord-watch.path \
-            || say "!! could not enable clip-discord-watch.path as ethan (needs an active ethan session)"
+            || warn "could not enable clip-discord-watch.path as ethan (needs an active ethan session)"
     fi
     say "ethan-tier: clip-db Discord queue watcher wired"
 }
