@@ -31,6 +31,21 @@ DEV_ENV_REPO="$REPO_ROOT/../dev-env"
 
 say(){ printf '%s\n' "$*"; }
 
+# warn: emit a NON-FATAL problem. Prints inline (with a "!!" marker) AND, when run
+# under install.sh (which sets MYSYS_RUN_LOG), appends a structured
+# "<step>\t<message>" record so the orchestrator can replay every warning in its
+# end-of-run summary — otherwise a warning buried deep in a ~25-step deploy scrolls
+# away unseen. STEP_NAME is set by the orchestrator per step; a standalone installer
+# run leaves it unset (-> "?") and, with no MYSYS_RUN_LOG, warn() degrades to a
+# plain inline say. Always returns 0 so a caller's `set -e` never trips on it.
+warn(){
+    say "!! $*"
+    if [ -n "${MYSYS_RUN_LOG:-}" ]; then
+        printf '%s\t%s\n' "${STEP_NAME:-?}" "$*" >>"$MYSYS_RUN_LOG" 2>/dev/null || true
+    fi
+    return 0
+}
+
 # as_dev: run a command as dev (or noop if already dev). Used by dev-tier installers.
 as_dev() { if [ "$ME" = dev ]; then "$@"; else sudo -u dev "$@"; fi; }
 

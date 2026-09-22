@@ -49,12 +49,12 @@ deploy_claude_tts() {
     if [ "$ME" = dev ]; then
         systemctl --user daemon-reload || true
         systemctl --user enable --now claude-tts-synth.path \
-            || say "!! could not enable claude-tts-synth.path"
+            || warn "could not enable claude-tts-synth.path"
     else
         sudo -u dev XDG_RUNTIME_DIR="/run/user/$duid" systemctl --user daemon-reload || true
         sudo -u dev XDG_RUNTIME_DIR="/run/user/$duid" systemctl --user \
             enable --now claude-tts-synth.path \
-            || say "!! could not enable claude-tts-synth.path as dev (dev lingering must be on)"
+            || warn "could not enable claude-tts-synth.path as dev (dev lingering must be on)"
     fi
     say "dev-tier: claude-tts synth watcher wired"
 
@@ -62,7 +62,7 @@ deploy_claude_tts() {
     # only). Self-contained venv + ONNX model (~340MB), no sudo -- espeak-ng is
     # bundled in a wheel.
     "${devrun[@]}" bash "$repo/setup/install-kokoro.sh" \
-        || say "!! claude-tts: kokoro bootstrap failed (check network / disk)"
+        || warn "claude-tts: kokoro bootstrap failed (check network / disk)"
 
     # Wire the Stop hook into dev's settings.json (merge-only, idempotent). Harmless
     # when off: `tts hook` no-ops unless a session ran `tts on`.
@@ -102,7 +102,7 @@ PY
         chmod 2775 "$SPOOL_ROOT"
         say "ethan-tier: claude-tts spool root ready at $SPOOL_ROOT"
     else
-        say "!! claude-tts: cannot create $SPOOL_ROOT (run install.sh as ethan; /srv/dev is not dev-writable)"
+        warn "claude-tts: cannot create $SPOOL_ROOT (run install.sh as ethan; /srv/dev is not dev-writable)"
     fi
     # dev creates the queue subtree inside it (dev-owned, group developers via setgid).
     local mk='mkdir -p "'"$SPOOL"'"/{incoming,building,failed,control,text-incoming,text-failed}
@@ -134,12 +134,12 @@ PY
     if [ "$ME" = ethan ]; then
         systemctl --user daemon-reload || true
         systemctl --user enable --now claude-tts-play.path claude-tts-stop.path \
-            || say "!! could not enable claude-tts path units"
+            || warn "could not enable claude-tts path units"
     else
         sudo -u ethan XDG_RUNTIME_DIR="/run/user/$uid" systemctl --user daemon-reload || true
         sudo -u ethan XDG_RUNTIME_DIR="/run/user/$uid" systemctl --user \
             enable --now claude-tts-play.path claude-tts-stop.path \
-            || say "!! could not enable claude-tts path units as ethan (needs an active ethan session)"
+            || warn "could not enable claude-tts path units as ethan (needs an active ethan session)"
     fi
     say "ethan-tier: claude-tts playback watchers wired"
 }

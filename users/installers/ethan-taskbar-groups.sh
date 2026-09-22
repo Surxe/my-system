@@ -174,11 +174,11 @@ PY
 )" && rc=0 || rc=$?
 
     if [ "${rc:-0}" -eq 2 ]; then
-        say "!! ethan-tier: taskbar-groups — no panels found (Plasma session up?); skipped"
+        warn "ethan-tier: taskbar-groups — no panels found (Plasma session up?); skipped"
         return
     fi
     if [ "${rc:-0}" -ne 0 ]; then
-        say "!! ethan-tier: taskbar-groups — parse failed (rc=${rc}); skipped"
+        warn "ethan-tier: taskbar-groups — parse failed (rc=${rc}); skipped"
         return
     fi
     if [ -z "$out" ]; then

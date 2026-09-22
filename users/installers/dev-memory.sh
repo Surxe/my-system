@@ -27,7 +27,7 @@ deploy_dev_memory() {
         # DeepSeek Harness: same notes, memory-standard (mm) layout.
         if [ -f "$DEV_ENV_REPO/lib/memory-standard.py" ]; then
             python3 "$DEV_ENV_REPO/lib/memory-standard.py" render --src "$d" --dst "$DSH_HOME_DIR/memory" || \
-                say "!! dsh memory render failed (see above)"
+                warn "dsh memory render failed (see above)"
         else
             say "dev-memory: no $DEV_ENV_REPO/lib/memory-standard.py — skipping dsh memory"
         fi

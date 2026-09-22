@@ -21,7 +21,7 @@ deploy_root_tier() {
             sudo install -o root -g root -m 0440 "$f" "/etc/sudoers.d/$base"
             say "root-tier: installed /etc/sudoers.d/$base (validated)"
         else
-            say "!! REFUSED /etc/sudoers.d/$base — visudo -c failed; left unchanged"
+            warn "REFUSED /etc/sudoers.d/$base — visudo -c failed; left unchanged"
         fi
         rm -f "$tmp"
     done
