@@ -98,6 +98,22 @@ INSTALLERS=(
 
 case "$ME" in
     ethan|root)
+        # --- Run logging (pruneable): tee all output to a timestamped log and keep
+        #     the newest KEEP_LOGS. The very first line printed is the log path, so
+        #     it's obvious where to look afterwards. Logs live in the sanctioned
+        #     scratch area (writable by both ethan and root; not a /var/log system
+        #     change), and any developers-group member can prune it. tee runs async
+        #     via process substitution, so its PID is waited on in the EXIT trap
+        #     below — otherwise output (even this first line) can race and vanish. ---
+        LOG_DIR="/srv/dev/scratch/my-system-install-logs"
+        KEEP_LOGS=10
+        mkdir -p "$LOG_DIR"
+        LOG_FILE="$LOG_DIR/install-$(date +%Y%m%d-%H%M%S)-$ME.log"
+        ls -1t "$LOG_DIR"/install-*.log 2>/dev/null | tail -n +$((KEEP_LOGS + 1)) | xargs -r rm -f || true
+        exec > >(tee -a "$LOG_FILE") 2>&1
+        TEE_PID=$!
+        say "logging to $LOG_FILE"
+
         [ "$DEBUG" = 1 ] && _dbg=" [debug: step timing on]" || _dbg=""
         say "== deploy (operator: $ME)$_dbg =="
 
@@ -108,7 +124,7 @@ case "$ME" in
         # installers/*.sh inherits it; removed on exit.
         MYSYS_RUN_LOG="$(mktemp "${TMPDIR:-/tmp}/mysys-install.XXXXXX")"
         export MYSYS_RUN_LOG
-        trap 'rm -f "$MYSYS_RUN_LOG"' EXIT
+        trap 'rm -f "$MYSYS_RUN_LOG"; exec >&- 2>&-; wait "$TEE_PID" 2>/dev/null' EXIT
 
         # Pre-fetch each review-gated repo's origin ONCE for the whole run, then tell
         # children to skip their own fetch (MYSYS_NO_FETCH). Previously every per-file
