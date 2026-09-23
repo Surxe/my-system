@@ -96,8 +96,69 @@ INSTALLERS=(
   dev-todo-sync            # dev's todo hub sync: user path/service + 'hub' remote + linger
 )
 
+# --- source-repo freshness: before deploying, check each source repo against its
+#     default branch (its upstream, e.g. origin/master or origin/main). Behaviour,
+#     matching how a workstation deploy should treat drift:
+#       * up to date            -> nothing;
+#       * purely behind + CLEAN  -> fast-forward it, so the deploy ships the latest
+#                                   committed config;
+#       * behind + LOCAL CHANGES -> don't touch the tree; report how many commits
+#                                   behind it is and remind to pull (diverged / non-ff
+#                                   history is reported the same way).
+#     "Local changes" = uncommitted tracked edits, or local commits ahead of upstream.
+#     Git runs as dev because both repos are dev-owned (a fetch/pull as ethan or root
+#     would leave root-owned objects and trip git's dubious-ownership guard). The SELF
+#     repo (this one) is flagged via SELF_UPDATED when it fast-forwards, so the caller
+#     can re-exec install.sh on the refreshed tree. Warnings surface inline and, once
+#     logging is up, in the end-of-run summary.
+SELF_UPDATED=0
+sync_source_repo() {   # $1 = repo root, $2 = label, $3 = "self" | "other"
+    local root="$1" label="$2" kind="$3"
+    [ -d "$root/.git" ] || { warn "$label: not a git repo at $root — skipping freshness check"; return 0; }
+    as_dev git -C "$root" fetch -q origin 2>/dev/null || true
+    local base
+    base="$(as_dev git -C "$root" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
+    [ -n "$base" ] || base="$(as_dev git -C "$root" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || true)"
+    if [ -z "$base" ] || ! as_dev git -C "$root" rev-parse --verify -q "$base" >/dev/null 2>&1; then
+        warn "$label: no upstream/default branch to compare against — skipping freshness check"
+        return 0
+    fi
+    local behind ahead
+    behind="$(as_dev git -C "$root" rev-list --count "HEAD..$base" 2>/dev/null || echo 0)"
+    ahead="$(as_dev git -C "$root" rev-list --count "$base..HEAD" 2>/dev/null || echo 0)"
+    [ "${behind:-0}" -gt 0 ] || { say ">> $label: up to date with $base"; return 0; }
+
+    local dirty=0
+    as_dev git -C "$root" diff --quiet --ignore-submodules HEAD 2>/dev/null || dirty=1
+
+    if [ "$dirty" -eq 0 ] && [ "${ahead:-0}" -eq 0 ]; then
+        if as_dev git -C "$root" merge --ff-only -q "$base" 2>/dev/null; then
+            say ">> $label: fast-forwarded $behind commit(s) to $base"
+            [ "$kind" = self ] && SELF_UPDATED=1
+        else
+            warn "$label: $behind commit(s) behind $base but fast-forward failed — run: git -C $root pull"
+        fi
+    else
+        local why="local uncommitted changes"
+        [ "${ahead:-0}" -gt 0 ] && why="$ahead local commit(s) ahead of $base"
+        warn "$label: $behind commit(s) behind $base ($why) — remember to: git -C $root pull"
+    fi
+}
+
 case "$ME" in
     ethan|root)
+        # Sync the two source repos (this repo + the shared dev-env layer) before
+        # deploying, unless a prior fast-forward already re-exec'd us (guard). Done
+        # before logging so a self fast-forward's re-exec leaves no stray half-log.
+        if [ -z "${MYSYS_SELF_SYNCED:-}" ]; then
+            sync_source_repo "$REPO_ROOT"    "my-system" self
+            sync_source_repo "$DEV_ENV_REPO" "dev-env"   other
+            if [ "$SELF_UPDATED" = 1 ]; then
+                say ">> my-system fast-forwarded — re-running install.sh on the updated tree"
+                exec env MYSYS_SELF_SYNCED=1 bash "$0" "$@"
+            fi
+        fi
+
         # --- Run logging (pruneable): tee all output to a timestamped log and keep
         #     the newest KEEP_LOGS. The very first line printed is the log path, so
         #     it's obvious where to look afterwards. Logs live in the sanctioned
