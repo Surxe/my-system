@@ -10,7 +10,6 @@ Workstation-local memories only. Universal memories (shared across both boxes, d
 - [ethan bashrc aliases](ethan-bashrc-aliases.md) — ethan's dev-helper shell functions (devsh/devperms/devclone/…), split into ~/.bashrc.d/; documented in system-context repo
 - [Bashrc edit workflow](bashrc-edit-workflow.md) — edit .bashrc.d helpers in the my-system repo (dev-writable), then ask before commit + remind to run install.sh
 - [No symlink repo→home](no-symlink-repo-to-home.md) — never symlink dev-writable repo files into Ethan's home; install.sh must COPY (privilege boundary)
-- [todo command = no action](todo-command-no-action.md) — `todo` CLI calls are Ethan logging, not requests; don't act/spend tokens unless explicitly asked
 - [todo done command](todo-done-command.md) — mark a todo complete with `todo done <id>`; reopen/rm round out the lifecycle
 - [tts command = no action](tts-command-no-action.md) — `!tts` shell calls are Ethan driving TTS; stay silent, don't act
 - [User-specific via my-system](user-specific-via-my-system.md) — new skills/aliases/shortcuts/statusbars go in my-system + install.sh, never edited in user files directly
