@@ -29,6 +29,7 @@
 #                                        -> ~ethan/.config/kglobalshortcutsrc   (per-key merge)
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
+#               system/etc-udev-rules.d/* -> /etc/udev/rules.d/*       (sudo install, 0644; reload+trigger on change)
 #
 # Debug/timing: pass --debug (or set MYSYS_DEBUG=1) to time each deploy step and
 # print a "slowest first" summary at the end. Timing is measured at THIS orchestrator
