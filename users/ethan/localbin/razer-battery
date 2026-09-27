@@ -1,33 +1,141 @@
 #!/usr/bin/env python3
-"""Print the battery level of a Razer device via the OpenRazer daemon.
+"""Print the battery level of a Razer device by talking to it over raw HID.
 
-No sudo required (relies on the openrazer-daemon + plugdev udev rule).
-Run with --help to see the presentation modes.
+No kernel module, no daemon, no sudo: this opens the device's /dev/hidraw node
+directly and performs the same feature-report exchange the OpenRazer driver does,
+so it survives kernel bumps (the DKMS driver historically breaks on new kernels).
+
+Access to /dev/hidraw* is granted by a udev rule (60-razer-battery.rules) that
+puts the node in the `developers` group; see the README. Run with --help for the
+presentation modes.
 """
 import argparse
+import array
+import fcntl
+import glob
+import os
 import sys
+import time
 
-import openrazer.client
+# Razer vendor id and the report protocol, lifted from OpenRazer's driver.
+RAZER_VENDOR_ID = 0x1532
+REPORT_LEN = 90            # struct razer_report
+CMD_CLASS_MISC = 0x07
+CMD_GET_BATTERY_LEVEL = 0x80
+CMD_GET_CHARGING = 0x84
+
+# Per-device HID transaction id. OpenRazer selects this per USB PID; 0x1f covers
+# the current HyperSpeed/receiver generation (Naga V2 HyperSpeed, Viper V3, etc).
+# Override for an untested device with $RAZER_TRANSACTION_ID (e.g. 0x3f, 0xff).
+DEFAULT_TRANSACTION_ID = 0x1f
+
+# hidraw ioctls, encoded the same way as <linux/hidraw.h>:
+#   _IOC(dir, type, nr, size); dir = READ|WRITE = 3; type = 'H'.
+_IOC_WRITE, _IOC_READ = 1, 2
+
+
+def _ioc(direction, nr, size):
+    return (direction << 30) | (size << 16) | (ord("H") << 8) | nr
+
+
+def _hidiocsfeature(size):
+    return _ioc(_IOC_WRITE | _IOC_READ, 0x06, size)
+
+
+def _hidiocgfeature(size):
+    return _ioc(_IOC_WRITE | _IOC_READ, 0x07, size)
+
+
+def _crc(report):
+    """XOR of report bytes 2..87 inclusive (OpenRazer razer_calculate_crc)."""
+    c = 0
+    for b in report[2:88]:
+        c ^= b
+    return c
+
+
+def _build_report(transaction_id, command_id, data_size=0x02):
+    r = bytearray(REPORT_LEN)
+    r[0] = 0x00               # status: 0 = new command
+    r[1] = transaction_id
+    # bytes 2-3 remaining_packets = 0, byte 4 protocol_type = 0
+    r[5] = data_size
+    r[6] = CMD_CLASS_MISC
+    r[7] = command_id
+    r[88] = _crc(r)
+    return bytes(r)
+
+
+def _iter_razer_hidraw():
+    """Yield (/dev/hidrawN, name) for every Razer HID interface, via sysfs."""
+    for node in sorted(glob.glob("/sys/class/hidraw/hidraw*")):
+        try:
+            with open(os.path.join(node, "device", "uevent")) as fh:
+                fields = dict(
+                    line.split("=", 1) for line in fh.read().splitlines() if "=" in line
+                )
+        except OSError:
+            continue
+        # HID_ID=<bus>:<VVVVVVVV>:<PPPPPPPP>, vendor id is the middle field.
+        hid_id = fields.get("HID_ID", "")
+        try:
+            vendor = int(hid_id.split(":")[1], 16)
+        except (IndexError, ValueError):
+            continue
+        if vendor == RAZER_VENDOR_ID:
+            name = fields.get("HID_NAME", "Razer device").replace("Razer Razer ", "Razer ")
+            yield "/dev/" + os.path.basename(node), name
+
+
+def _query(path, transaction_id, command_id):
+    """Send one feature-report command to a hidraw node and return the 90-byte
+    response, or None if the exchange didn't yield a valid reply."""
+    request = _build_report(transaction_id, command_id)
+    # hidraw feature buffers are [report_number] + payload; Razer uses id 0x00.
+    buf = array.array("B", bytes([0x00]) + request)
+    try:
+        fd = os.open(path, os.O_RDWR)
+    except OSError:
+        return None
+    try:
+        fcntl.ioctl(fd, _hidiocsfeature(len(buf)), buf, True)
+        time.sleep(0.05)      # let the device compute the reply
+        resp = array.array("B", bytes(len(buf)))
+        resp[0] = 0x00
+        fcntl.ioctl(fd, _hidiocgfeature(len(resp)), resp, True)
+    except OSError:
+        return None
+    finally:
+        os.close(fd)
+    report = bytes(resp[1:])          # strip the report-number byte
+    # status 0x02 = command succeeded; echoed command_id must match our request.
+    if report[0] != 0x02 or report[7] != command_id:
+        return None
+    return report
 
 
 def get_battery():
-    """Return (name, percent:int, charging:bool) for the first Razer
-    device that reports a battery, or None if there isn't one."""
-    dm = openrazer.client.DeviceManager()
-    for d in dm.devices:
-        try:
-            if d.has("battery"):
-                return d.name, round(d.battery_level), bool(d.is_charging)
-        except Exception:
+    """Return (name, percent:int, charging:bool) for the first Razer device
+    that answers a battery query, or None if none does."""
+    tid_env = os.environ.get("RAZER_TRANSACTION_ID")
+    transaction_id = int(tid_env, 0) if tid_env else DEFAULT_TRANSACTION_ID
+    for path, name in _iter_razer_hidraw():
+        level = _query(path, transaction_id, CMD_GET_BATTERY_LEVEL)
+        if level is None:
             continue
+        pct = round(level[9] / 255 * 100)   # arguments[1], scaled 0-255 -> 0-100
+        charging = False
+        chg = _query(path, transaction_id, CMD_GET_CHARGING)
+        if chg is not None:
+            charging = bool(chg[9])
+        return name, pct, charging
     return None
 
 
 def emoji_for(pct, charging):
     if charging:
         return "\U0001F50C"  # 🔌
-    # 🔋 full-ish, 🪫 low
-    return "\U0001FAAB" if pct <= 20 else "\U0001F50B"
+    return "\U0001FAAB" if pct <= 20 else "\U0001F50B"  # 🪫 / 🔋
 
 
 def bar_for(pct, width=10):
@@ -36,7 +144,7 @@ def bar_for(pct, width=10):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Razer battery status.")
+    ap = argparse.ArgumentParser(description="Razer battery status (raw HID, no OpenRazer).")
     g = ap.add_mutually_exclusive_group()
     g.add_argument("-p", "--percent", action="store_true",
                    help="just the number, e.g. 74")
@@ -45,14 +153,14 @@ def main():
     g.add_argument("-b", "--bar", action="store_true",
                    help="unicode bar, e.g. 🔋 ███████░░░ 74%%")
     g.add_argument("-n", "--notify", action="store_true",
-                   help="send a desktop notification (needs notify-send)")
+                   help="send a KDE passive popup (needs kdialog)")
     args = ap.parse_args()
 
     info = get_battery()
     if info is None:
-        print("No Razer device with a battery found "
-              "(is it awake and is openrazer-daemon running?)",
-              file=sys.stderr)
+        print("No Razer device answered a battery query "
+              "(is it awake, and does /dev/hidraw* allow the `developers` group? "
+              "see README)", file=sys.stderr)
         return 1
     name, pct, charging = info
     charge_txt = " (charging)" if charging else ""
@@ -65,8 +173,6 @@ def main():
         print(f"{emoji_for(pct, charging)} {bar_for(pct)} {pct}%")
     elif args.notify:
         import subprocess
-        # Numerical-only passive popup via KDE's kdialog; auto-hides after
-        # the given number of seconds.
         subprocess.run(["kdialog", "--title", "Razer Mouse Battery",
                         "--passivepopup", f"{pct}%{charge_txt}", "4"])
         print(f"{name}: {pct}%{charge_txt}")

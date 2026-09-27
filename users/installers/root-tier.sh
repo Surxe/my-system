@@ -25,6 +25,30 @@ deploy_root_tier() {
         fi
         rm -f "$tmp"
     done
+    # udev rules (e.g. hidraw access for razer-battery). Installed 0644 root; if
+    # any rule actually changed, reload + retrigger so the grant applies to the
+    # already-plugged device without a replug.
+    local udev_changed=0
+    if [ -d "$REPO_ROOT"/system/etc-udev-rules.d ]; then
+        for f in "$REPO_ROOT"/system/etc-udev-rules.d/*; do
+            [ -e "$f" ] || continue
+            base="$(basename "$f")"; rel="system/etc-udev-rules.d/$base"
+            review_gate "$rel" || { say "   skipped $base"; continue; }
+            if sudo cmp -s "$f" "/etc/udev/rules.d/$base" 2>/dev/null; then
+                say "root-tier: /etc/udev/rules.d/$base already current"
+                continue
+            fi
+            sudo install -o root -g root -m 0644 "$f" "/etc/udev/rules.d/$base"
+            say "root-tier: installed /etc/udev/rules.d/$base"
+            udev_changed=1
+        done
+    fi
+    if [ "$udev_changed" = 1 ]; then
+        sudo udevadm control --reload-rules
+        sudo udevadm trigger --subsystem-match=hidraw --action=add
+        say "root-tier: reloaded udev rules and retriggered hidraw"
+    fi
+
     # world-readable host data (the shared protect-core ruleset consumed by
     # devscaffold + protect-repo.sh, and the merge-policy definition consumed by
     # devscaffold + set-merge-policy.sh); mirrors the repo path under

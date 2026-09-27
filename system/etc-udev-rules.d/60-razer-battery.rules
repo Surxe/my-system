@@ -1,0 +1,9 @@
+# Razer battery readout over raw HID (no OpenRazer kernel module).
+#
+# Grants the `developers` group read/write on Razer HID nodes so razer-battery
+# can perform its feature-report battery query without root. Both ethan (the
+# Meta+B hotkey) and dev (testing) are in `developers`.
+#
+# Deployed by my-system install.sh (root-tier) to /etc/udev/rules.d/.
+# Replaces the OpenRazer-provided plugdev rule that was removed with the driver.
+SUBSYSTEM=="hidraw", ATTRS{idVendor}=="1532", GROUP="developers", MODE="0660"
