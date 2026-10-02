@@ -19,5 +19,5 @@ private/encrypted-notes/
 *.token
 
 # Regenerable derived state: the repo-description SHA->description cache
-# (generate-repo-descriptions.sh). Repopulated on any run; never committed.
+# (dev-env/lib/generate-repo-descriptions.sh, via build-claude-md.sh). Repopulated on any run; never committed.
 users/dev/.cache/
