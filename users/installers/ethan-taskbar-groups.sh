@@ -111,6 +111,11 @@ def plugin(cid, aid): return G.get(("Containments", cid, "Applets", aid), {}).ge
 def gen(cid, aid):    return G.get(("Containments", cid, "Applets", aid, "Configuration", "General"), {})
 
 actions = []
+for conn in conf:
+    if conn not in conn_index:
+        sys.stderr.write("taskbar-groups: [%s] matches no enabled output (have: %s) — "
+                         "section skipped; re-point it per `kscreen-doctor -o`\n"
+                         % (conn, ", ".join(sorted(conn_index)) or "none"))
 panels = [h[1] for h, kv in G.items()
           if len(h) == 2 and h[0] == "Containments" and kv.get("plugin") == "org.kde.panel"]
 if not panels:

@@ -49,7 +49,7 @@ declarative config layer.
    ```
    [HDMI-A-1]
    group coding
-     applications:code.desktop
+     applications:com.microsoft.VSCode.desktop
      applications:org.kde.konsole.desktop
    ```
    (`<connector>` is the output name from `kscreen-doctor -o`.)
@@ -86,7 +86,7 @@ to `false`.
 
 - **HDMI-A-1**: `coding` (code, github-desktop, claude-dev-split, konsole),
   `media` (obs, kdenlive, pinta).
-- **DP-2**: `firefox` (dolphin, discord, firefox, steam, my-shortcuts), plus the
+- **DP-1**: `firefox` (dolphin, discord, firefox, steam, my-shortcuts, missioncenter), plus the
   empty task manager (`show-minimized-tasks false` — shows all windows).
 
 The `my-shortcuts` launcher (question-mark icon, no keyboard binding) pops up a

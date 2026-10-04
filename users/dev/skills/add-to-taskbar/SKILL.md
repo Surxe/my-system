@@ -31,7 +31,7 @@ Full design: `operating-system/taskbar-shortcut-groups.md`.
 | --- | --- | --- | --- |
 | `hdmi1` | left | `[HDMI-A-1]` group **coding** | yes |
 | `hdmi2` | left | `[HDMI-A-1]` group **media** | yes |
-| `dp2` | right | `[DP-2]` group **firefox** | yes |
+| `dp2` | right | `[DP-1]` group **firefox** | yes |
 | `dp1` | right | stock Icons-Only Task Manager (default) | **no** |
 
 `dp1` is the stock default taskbar (the empty task manager that surfaces

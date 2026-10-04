@@ -10,7 +10,7 @@
 # Friendly taskbar names -> conf [connector] / group <Name>:
 #   hdmi1 -> [HDMI-A-1] group coding   (left monitor)
 #   hdmi2 -> [HDMI-A-1] group media    (left monitor)
-#   dp2   -> [DP-2]     group firefox  (right monitor)
+#   dp2   -> [DP-1]     group firefox  (right monitor)
 #   dp1   -> stock Icons-Only Task Manager (default) — NOT a Launcher Group;
 #            it has no launcher list this flow manages (only show-minimized-tasks).
 #
@@ -54,7 +54,7 @@ done
 case "$taskbar" in
     hdmi1) connector="HDMI-A-1"; group="coding" ;;
     hdmi2) connector="HDMI-A-1"; group="media" ;;
-    dp2)   connector="DP-2";     group="firefox" ;;
+    dp2)   connector="DP-1";     group="firefox" ;;
     dp1)
         die "dp1 is the stock Icons-Only Task Manager (the default taskbar), not a
    Launcher Group — this flow manages Launcher Group widgets only, and dp1's
