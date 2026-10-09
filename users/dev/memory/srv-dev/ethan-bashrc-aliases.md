@@ -12,7 +12,7 @@ ethan's `.bashrc` carries a set of dev-helper shell **functions** (not plain ali
 
 - `devsh` — open a shell as the `dev` user, cd'd to $PWD (fallback /srv/dev)
 - `devperms <dir>` — `sudo /usr/local/sbin/devperms` to fix shared perms
-- `devsafe_ethan <dir>` / `devsafe_dev <dir>` — idempotently add repo to git `safe.directory` for ethan / for dev (dev via `sudo -u dev -H`)
+- `devsafe_ethan <dir>` / `devsafe_dev <dir>` — idempotently add repo and each of its submodule paths (`devsafe_paths`; safe.directory isn't recursive) to git `safe.directory` for ethan / for dev (dev via `sudo -u dev -H`)
 - `devclone <profile>/<repo>` and `devnew <repo>` — clone/init under /srv/dev/repos, fix perms, mark safe for both users, then `devsh` in
 
 Refactor plan (2026-08-07): keep shell boilerplate in `.bashrc`, add a loader that sources `~/.bashrc.d/*.sh`, split functions into `10-devsh.sh`, `20-devperms.sh`, `30-devsafe.sh`, `40-devrepo.sh`. Numeric prefixes are cosmetic — bash resolves inter-function calls at call time, so source order is irrelevant unless a file runs code at source time.
