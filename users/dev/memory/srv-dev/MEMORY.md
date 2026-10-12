@@ -6,7 +6,6 @@ Workstation-local memories only. Universal memories (shared across both boxes, d
 - [MangoHud Debian no-NVML](mangohud-debian-no-nvml.md) — Debian's mangohud lacks NVML → NVIDIA GPU% stuck at 0%; fix is upstream install
 - [BT headphone X11 relink](bt-headphone-x11-relink.md) — "X11" headphone page-timeouts on Debian after Windows use; remove + re-pair fixes it
 - [Clip-tagging MCP](clip-tagging-mcp.md) — gaming-clip tag+query MCP: stack decisions, runs on Linux dev box (clips synced from Windows)
-- [WGU AI masters plan](wgu-ai-masters-plan.md) — enrolling in WGU M.S. SWE (AI) funded by Nelnet tuition assistance; plan in /srv/dev/repos/wgu-ai-masters
 - [ethan bashrc aliases](ethan-bashrc-aliases.md) — ethan's dev-helper shell functions (devsh/devperms/devclone/…), split into ~/.bashrc.d/; documented in system-context repo
 - [Bashrc edit workflow](bashrc-edit-workflow.md) — edit .bashrc.d helpers in the my-system repo (dev-writable), then ask before commit + remind to run install.sh
 - [No symlink repo→home](no-symlink-repo-to-home.md) — never symlink dev-writable repo files into Ethan's home; install.sh must COPY (privilege boundary)
