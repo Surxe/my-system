@@ -1,0 +1,64 @@
+#!/usr/bin/env bash
+# playlist-player-sync -- ethan entry point for the dev-side half of playlist-player:
+# fetching a playlist into the cache, and the two commands that inspect or correct it.
+#
+#   playlist-player-sync <playlist-url> [sync options]   fetch tracklist, audio, lyrics, covers
+#   playlist-player-sync status [playlist]               what is cached
+#   playlist-player-sync pin <track-id> <url|clear>      choose a track's audio by hand
+#
+# Runs AS ethan only long enough to read the ethan-owned secret, then hops to `dev` to
+# do the work. The work must be dev, not ethan: the playlist-player repo and its .venv
+# (yt-dlp) are dev-writable, so running them as ethan would execute dev-tree code with
+# ethan's privileges; and the cache they fill is dev's. dev running its own repo's code
+# is not an escalation.
+#
+# Secret model (same as clip-post): the Apify token lives ONLY in
+# ~/.config/playlist-player/secrets.env (chmod 600, ethan-owned, hand-maintained) --
+# never in a repo, never anywhere `dev` can read at rest. It is sourced here and carried
+# across sudo's env_reset by --preserve-env (whitelisted in
+# system/etc-sudoers.d/devbridge-env), so dev sees it only in the running process and it
+# never appears on a command line. It is loaded for `sync` alone, and is optional even
+# there: a playlist whose tracklist is already cached needs no token, and `sync` names
+# the variable itself when it needs the token and has none.
+#
+# This is the review-gated COPY in ethan's ~/.local/bin (deployed by
+# my-system/users/install.sh -- ethan-bin copies every localbin file).
+set -uo pipefail
+
+SECRETS="$HOME/.config/playlist-player/secrets.env"
+
+case "${1:-}" in
+    status | pin | sync)
+        command=$1
+        shift
+        ;;
+    "" | -h | --help)
+        sed -n '2,7p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
+        exit 2
+        ;;
+    *) command=sync ;;
+esac
+
+if [ "$command" = sync ] && [ -r "$SECRETS" ]; then
+    # Load the secret into THIS (ethan) shell only, exported so --preserve-env can carry
+    # it across the sudo boundary.
+    set -a
+    # shellcheck source=/dev/null
+    . "$SECRETS"
+    set +a
+fi
+
+# Hop to dev, preserving only the token. Inside: put dev's node on PATH (yt-dlp extracts
+# more reliably with a JavaScript runtime, and sudo's secure_path has none), keep new
+# cache files group-writable, and run the repo's own virtualenv. The inner `_` is $0 so
+# the command and its arguments land in "$@".
+# shellcheck disable=SC2016  # expanded by the inner shell, on purpose
+sudo -u dev --preserve-env=APIFY_TOKEN -H bash -c '
+    for bin in "$HOME"/.nvm/versions/node/*/bin "$HOME/.local/bin"; do
+        [ -d "$bin" ] && PATH="$bin:$PATH"
+    done
+    export PATH
+    umask 002
+    cd /srv/dev/repos/playlist-player || exit 1
+    exec .venv/bin/python -m playlist_player "$@"
+' _ "$command" "$@"

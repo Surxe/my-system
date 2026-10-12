@@ -24,7 +24,7 @@ Design and rationale: [development/git-workflow.md](../development/git-workflow.
 Ethan may run commands as `dev` without a password. This is what `devsh`
 ([`users/ethan/.bashrc.d/10-devsh.sh`](../users/ethan/.bashrc.d/10-devsh.sh)) and
 every ethan-owned launcher in `~/.local/bin` (e.g. `clip-post`, `wrf-orchestrator`,
-`clip-db-pipeline`, `merge-clip-audio`) rely on to hop work to `dev`.
+`clip-db-pipeline`, `merge-clip-audio`, `playlist-player-sync`) rely on to hop work to `dev`.
 
 > **TODO — capture the bridge RULE.** The grant itself (the `ethan ALL=(dev)
 > NOPASSWD: ...` line) currently lives only in a live `/etc/sudoers.d/` drop-in and
@@ -45,6 +45,7 @@ variables"). The whitelist is additive and lives in
 | `STEAM_USERNAME`, `STEAM_PASSWORD` | `wrf-orchestrator` (Exporter Steam login) | `~ethan/.config/wrf-orchestrator/secrets.env` |
 | `GH_DATA_REPO_PAT` | `wrf-orchestrator` (Parser data-repo push) | `~ethan/.config/wrf-orchestrator/secrets.env` |
 | `CLIP_DISCORD_WEBHOOK` | `clip-post` (Discord webhook upload) | `~ethan/.config/clip-db/secrets.env` |
+| `APIFY_TOKEN` | `playlist-player-sync` (Apify tracklist fetch) | `~ethan/.config/playlist-player/secrets.env` |
 
 To let a new dev-run tool carry a secret: add the variable here, redeploy with
 `install.sh`, and follow the secret model in
