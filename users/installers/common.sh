@@ -49,6 +49,20 @@ warn(){
 # as_dev: run a command as dev (or noop if already dev). Used by dev-tier installers.
 as_dev() { if [ "$ME" = dev ]; then "$@"; else sudo -u dev "$@"; fi; }
 
+# current_branch / checkout_label / on_default_branch come from the shared dev-env
+# lib (also used by home-server's install.sh): install.sh deploys whatever is CHECKED
+# OUT, so the refresh steps (fetch + fast-forward / pull) apply only on a repo's
+# default branch. If the dev-env clone is missing or predates the lib, fall back to
+# "always the default branch" — i.e. always refresh, which also brings the lib in.
+if [ -f "$DEV_ENV_REPO/lib/source-checkout.sh" ]; then
+    # shellcheck source=/dev/null
+    source "$DEV_ENV_REPO/lib/source-checkout.sh"
+else
+    current_branch()    { :; }
+    checkout_label()    { echo "unknown checkout"; }
+    on_default_branch() { return 0; }
+fi
+
 # ensure_agents_symlink: point a live ~/.claude/~/.dsh path at a neutral
 # ~/.agents target (idempotent; a pre-existing real file/dir is moved aside to
 # <path>.pre-agents rather than deleted, so the old copy-into-~/.claude layout is

@@ -102,7 +102,10 @@ INSTALLERS=(
 )
 
 # --- source-repo freshness: before deploying, check each source repo against its
-#     default branch (its upstream, e.g. origin/master or origin/main). Behaviour,
+#     default branch (its upstream, e.g. origin/master or origin/main). Only a repo
+#     checked out ON its default branch is checked: any other checkout (a feature
+#     branch under test, a detached HEAD) is deployed exactly as it stands, since
+#     install.sh is how a change is tested before it merges. On the default branch,
 #     matching how a workstation deploy should treat drift:
 #       * up to date            -> nothing;
 #       * purely behind + CLEAN  -> fast-forward it, so the deploy ships the latest
@@ -119,7 +122,12 @@ INSTALLERS=(
 SELF_UPDATED=0
 sync_source_repo() {   # $1 = repo root, $2 = label, $3 = "self" | "other"
     local root="$1" label="$2" kind="$3"
-    [ -d "$root/.git" ] || { warn "$label: not a git repo at $root — skipping freshness check"; return 0; }
+    # -e, not -d: in a `git worktree` checkout .git is a file.
+    [ -e "$root/.git" ] || { warn "$label: not a git repo at $root — skipping freshness check"; return 0; }
+    if ! on_default_branch "$root"; then
+        say ">> $label: on '$(checkout_label "$root")', not the default branch — deploying the active checkout as-is"
+        return 0
+    fi
     as_dev git -C "$root" fetch -q origin 2>/dev/null || true
     local base
     base="$(as_dev git -C "$root" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || true)"
