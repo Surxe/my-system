@@ -114,6 +114,29 @@ review_gate() {   # $1 = THIS repo's relative path
     review_gate_in "$REPO_ROOT" "$BASE_REF" "$1"
 }
 
+# --- review gate for a whole TREE: like review_gate_in, but one decision for every
+#     tracked file under a directory (a package of dozens of files would otherwise
+#     prompt dozens of times). On a difference it prints the --stat summary and how
+#     to see the full diff, then prompts once. Callers must deploy ONLY the tracked
+#     files (git ls-files): an untracked file never appears in a diff, so it must
+#     never be copied either. ---
+review_gate_tree_in() {   # $1 = repo root, $2 = base ref, $3 = repo-relative dir
+    local root="$1" base="$2" rel="$3"
+    ensure_fetched "$root"
+    if git -C "$root" rev-parse --verify -q "$base" >/dev/null; then
+        if git -C "$root" diff --quiet "$base" -- "$rel"; then
+            return 0   # every tracked file matches ethan-approved upstream
+        fi
+        say "!! '$rel/' ($root) DIFFERS from approved $base:"
+        git -C "$root" --no-pager diff --stat "$base" -- "$rel" || true
+        say "   full diff: git -C $root diff $base -- $rel"
+    else
+        say "!! no upstream ($base) to compare against yet: '$rel/' ($root)"
+    fi
+    local a=""; read -r -p "   install this privileged tree anyway? [y/N] " a </dev/tty || true
+    [ "$a" = y ] || [ "$a" = Y ]
+}
+
 # --- todo tool: shared locations for the cross-repo `todo` CLI (deployed onto each
 #     user's PATH by the todo-dev / todo-ethan installers). The tool lives in its
 #     OWN repo; its store is shared (group `developers`, group-writable) and bin/todo
@@ -147,6 +170,18 @@ ensure_safe_dir() {   # $1 = absolute repo path
 # claude-tts's approved upstream before they land in ethan's home. ---
 CLAUDE_TTS_REPO="/srv/dev/repos/claude-tts"
 CLAUDE_TTS_BASE_REF="$(git -C "$CLAUDE_TTS_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/main)"
+
+# --- playlist-player: Spotify-playlist player with a lyric overlay. Lives in its
+# OWN repo. Its dev-side half (sync) runs from that repo as dev; the half that needs
+# Ethan's session (the daemon and the overlay) runs AS ethan from a COPY of the
+# playlist_player/ package, review-gated as one tree against that repo's approved
+# upstream. The package needs only the standard library for those commands, so the
+# ethan side has no virtualenv.
+# The baseline is the remote's DEFAULT branch, never the checked-out branch's upstream:
+# that repo is usually on a feature branch, and dev can push one and track it, which
+# would make an unmerged branch compare equal to itself and pass the gate unprompted. ---
+PLAYLIST_PLAYER_REPO="/srv/dev/repos/playlist-player"
+PLAYLIST_PLAYER_BASE_REF="$(git -C "$PLAYLIST_PLAYER_REPO" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
 
 # --- timing helpers (used by install.sh's --debug per-step timing) ---
 # now_ms: current wall-clock time in integer milliseconds (bash 5 EPOCHREALTIME,

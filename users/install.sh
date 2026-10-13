@@ -27,6 +27,9 @@
 #               users/ethan/.config/**   -> ~ethan/.config/**          (copy 0644; e.g. fastfetch)
 #               users/ethan/kde-global-shortcuts.conf
 #                                        -> ~ethan/.config/kglobalshortcutsrc   (per-key merge)
+#               (cross-repo) playlist-player/playlist_player/
+#                                        -> ~ethan/.local/share/playlist-player/playlist_player/
+#                                                                      (copy of tracked files; gated as a tree vs its origin/main)
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
 #               system/etc-udev-rules.d/* -> /etc/udev/rules.d/*       (sudo install, 0644; reload+trigger on change)
@@ -80,6 +83,7 @@ INSTALLERS=(
   ethan-config             # ~/.config trees (fastfetch, systemd units, ...) -> ethan's ~/.config
   clip-discord             # clip-db: create Discord post spool + enable queue watcher
   claude-tts               # spoken Claude output: dev tts CLI + piper, ethan player + spool + watchers
+  playlist-player          # playlist player: reviewed package copy -> ethan's ~/.local/share; shared cache/state dirs
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
   ethan-shortcuts          # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
   ethan-plasmarc           # plasmarc tweaks (tooltip delay) -> ~ethan/.config/plasmarc
@@ -194,6 +198,7 @@ case "$ME" in
         git -C "$REPO_ROOT" fetch -q origin 2>/dev/null || true
         git -C "$TODO_REPO" fetch -q origin 2>/dev/null || true
         git -C "$CLAUDE_TTS_REPO" fetch -q origin 2>/dev/null || true
+        git -C "$PLAYLIST_PLAYER_REPO" fetch -q origin 2>/dev/null || true
         export MYSYS_NO_FETCH=1
 
         STEP_NAMES=(); STEP_MS=(); FAILED=()
