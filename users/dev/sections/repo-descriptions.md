@@ -35,6 +35,7 @@ Do this by default:
 - **ooz** — `/srv/dev/repos/ooz` (`powzix/ooz`) — Open source Kraken / Mermaid / Selkie / Leviathan / LZNA / Bitknit decompressor
 - **OptionsConfig** — `/srv/dev/repos/OptionsConfig` (`Surxe/OptionsConfig`) — Configure options for your repository for environment variables, arguments, and documentation generation
 - **palworld-save-tools** — `/srv/dev/repos/palworld-save-tools` (`cheahjs/palworld-save-tools`) — Tools for converting Palworld .sav files to JSON and back
+- **playlist-player** — `/srv/dev/repos/playlist-player` (`Surxe/playlist-player`) — (no description set)
 - **razer-battery-status** — `/srv/dev/repos/razer-battery-status` (`Surxe/razer-battery-status`) — Razer battery status popup- ready to be triggered by a global shortcut
 - **steam-price-tracker** — `/srv/dev/repos/steam-price-tracker` (`Surxe/steam-price-tracker`) — Steam price tracker and notifier with app-specific price thresholds
 - **Surxe** — `/srv/dev/repos/Surxe` (`Surxe/Surxe`) — GitHub profile README - datamining game files into structured, queryable data, and the databases and wikis built around it.
@@ -42,6 +43,7 @@ Do this by default:
 - **todo** — `/srv/dev/repos/todo` (`Surxe/todo`) — A central capture system for dev/project ideas, driven from Claude Code sessions or the shell, with deferred claude -p classification.
 - **valheim-server** — `/srv/dev/repos/valheim-server` (`Surxe/valheim-server`) — (no description set)
 - **WRF-Compat-Tools** — `/srv/dev/repos/WRF-Compat-Tools` (`OwendB1/WRF-Compat-Tools`) — A repository with tools and research + a customized Proton 10 runtime for War Robots: Frontiers to run under Linux.
+- **WRFrontiersDB** — `/srv/dev/repos/WRFrontiersDB` (`Surxe/WRFrontiersDB`) — (no description set)
 - **WRFrontiersDB-Data** — `/srv/dev/repos/WRFrontiersDB-Data` (`Surxe/WRFrontiersDB-Data`) — War Robots Frontiers Database Data Archive
 - **WRFrontiersDB-Design** — `/srv/dev/repos/WRFrontiersDB-Design` (`Surxe/WRFrontiersDB-Design`) — (no description set)
 - **WRFrontiersDB-Discord-Bot** — `/srv/dev/repos/WRFrontiersDB-Discord-Bot` (`Surxe/WRFrontiersDB-Discord-Bot`) — (no description set)
