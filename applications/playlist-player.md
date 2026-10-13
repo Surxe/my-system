@@ -45,7 +45,7 @@ playlist-player ctl toggle              # play, pause, next, prev, stop, seek, v
 | Shared data | `playlist-player` repo, `cache/` and `state/` | in place (group `developers`, setgid, group-writable) | `installers/playlist-player.sh` |
 
 The package copy is review-gated as one tree against the playlist-player repo's
-approved upstream (`review_gate_tree_in` in `installers/common.sh`): if any tracked file
+approved default branch (`review_gate_tree_in` in `installers/common.sh`): if any tracked file
 differs, the deploy shows the `--stat` and asks once. Untracked files are never copied.
 Until that repo's work is merged to its default branch, every deploy will ask.
 
