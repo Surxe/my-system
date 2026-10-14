@@ -39,16 +39,18 @@ playlist-player ctl toggle              # play, pause, next, prev, stop, seek, v
 
 ## Starting and stopping it
 
-The **Playlist Player** launcher (menu and desktop) opens a Konsole window running
+The **Playlist Player** launcher (menu and desktop) opens a terminal window (foot) running
 `playlist-player start`. That window is the application: it stays open while the player
 runs, closing it (or Ctrl-C in it) stops the daemon, mpv and the overlay together, and
 the daemon saves its place first. Clicking the launcher while it is already running
 only opens the page. The window is held open after exit only when `start` failed.
 
 The launcher's icon is the package's own `server/static/icon.svg`, read from the
-deployed copy; the page uses the same file as its favicon. `konsole --desktopfile
-playlist-player` gives the window the launcher's identity, so the taskbar shows that
-icon instead of Konsole's.
+deployed copy; the page uses the same file as its favicon. `foot --app-id=playlist-player`
+gives the window the launcher's identity, so the taskbar shows that icon instead of the
+terminal's. The launcher needs `foot` installed (`apt install foot`). It does not use
+Konsole because Konsole ignores `--desktopfile`: it applies the option only after
+it has already published its app data, so every Konsole window reports `org.kde.konsole`.
 
 ## Where the pieces are
 

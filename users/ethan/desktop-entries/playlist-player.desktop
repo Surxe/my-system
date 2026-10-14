@@ -1,11 +1,13 @@
 [Desktop Entry]
-# source: playlist-player  # hand-maintained (konsole flags; do not regenerate via add-shortcut)
-# --desktopfile gives the Konsole window this entry's identity, so the taskbar shows this
-# icon rather than Konsole's; --separate keeps it a process of its own so that holds.
+# source: playlist-player  # hand-maintained (foot flags; do not regenerate via add-shortcut)
+# foot, not Konsole: --app-id gives the window this entry's identity (Wayland app_id =
+# this file's basename), so the taskbar keeps this icon. Konsole cannot do this: it
+# parses --desktopfile but applies it only after KAboutData::setApplicationData, so its
+# windows always report org.kde.konsole and get grouped under Konsole's icon.
 Type=Application
 Name=Playlist Player
 Comment=Start the player, the lyric overlay and the page; closing the window stops them
-Exec=konsole --separate --desktopfile playlist-player -p tabtitle=playlist-player -e /home/ethan/.local/bin/playlist-player.run.sh
+Exec=foot --app-id=playlist-player --title="Playlist Player" /home/ethan/.local/bin/playlist-player.run.sh
 Icon=/home/ethan/.local/share/playlist-player/playlist_player/server/static/icon.svg
 Terminal=false
 Categories=AudioVideo;Audio;Player;
