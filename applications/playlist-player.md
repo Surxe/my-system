@@ -9,7 +9,7 @@ everything about who runs what is here.
 
 | Part | Runs as | From | Why |
 |------|---------|------|-----|
-| `sync`, `status`, `pin` | dev | the repo and its `.venv` | Network, yt-dlp and a dev-writable tree: the usual hop. The cache it fills is dev's. |
+| `sync`, `status`, `pin`, `align` | dev | the repo and its `.venv` | Network, yt-dlp and a dev-writable tree: the usual hop. The cache it fills is dev's. `align` also uses the GPU. |
 | `serve` (the daemon, owns mpv) | ethan | a reviewed copy in `~/.local/share/playlist-player` | mpv needs Ethan's audio server, which dev cannot reach. |
 | `overlay` | ethan | the same copy | It needs Ethan's Wayland display, which dev cannot reach. |
 | `ctl` | ethan | the same copy | Same code as the daemon; a loopback HTTP call. |
@@ -30,6 +30,7 @@ Python standard library (plus the system GTK bindings for the overlay) and are r
 playlist-player-sync <playlist-url>     # fetch into the cache (as dev); resumable
 playlist-player-sync status [playlist]  # what is cached
 playlist-player-sync pin <track> <url>  # choose a track's audio by hand
+playlist-player-sync align [playlist]   # time each word against the audio (as dev, on the GPU); resumable
 playlist-player start                   # everything: daemon, overlay, and the page in the browser
 playlist-player serve                   # the daemon alone; then open http://127.0.0.1:8765/
 playlist-player overlay [--demo]        # the lyric line; --demo for positioning
