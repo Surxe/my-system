@@ -3,7 +3,9 @@
 # live session: the daemon (it owns mpv, so it needs Ethan's audio) and the lyric overlay
 # (it needs Ethan's Wayland display). `ctl` rides along because it is the same code.
 #
-#   playlist-player serve              the daemon; then open http://127.0.0.1:8765/
+#   playlist-player start              everything: the daemon, the overlay, and the page
+#                                      in the browser; Ctrl-C or closing the terminal stops it
+#   playlist-player serve              the daemon alone; then open http://127.0.0.1:8765/
 #   playlist-player overlay [--demo]   the lyric line above other windows
 #   playlist-player ctl toggle         also: play, pause, next, prev, stop, seek, volume
 #
@@ -25,13 +27,13 @@ APP="$HOME/.local/share/playlist-player"
 CONFIG="$HOME/.config/playlist-player/settings.conf"
 
 case "${1:-}" in
-    serve | overlay | ctl) ;;
+    start | serve | overlay | ctl) ;;
     sync | status | pin)
         echo "playlist-player: '$1' runs on the dev side; use: playlist-player-sync $*" >&2
         exit 2
         ;;
     *)
-        sed -n '2,8p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
+        sed -n '2,10p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//' >&2
         exit 2
         ;;
 esac

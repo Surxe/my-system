@@ -13,6 +13,7 @@ everything about who runs what is here.
 | `serve` (the daemon, owns mpv) | ethan | a reviewed copy in `~/.local/share/playlist-player` | mpv needs Ethan's audio server, which dev cannot reach. |
 | `overlay` | ethan | the same copy | It needs Ethan's Wayland display, which dev cannot reach. |
 | `ctl` | ethan | the same copy | Same code as the daemon; a loopback HTTP call. |
+| `start` | ethan | the same copy | The daemon with the overlay as its child, plus the page in the browser. |
 
 The daemon cannot be hopped to dev and merely "play through" Ethan's audio: mpv's
 control socket can run programs, so mpv and whatever controls it must be one user.
@@ -29,16 +30,31 @@ Python standard library (plus the system GTK bindings for the overlay) and are r
 playlist-player-sync <playlist-url>     # fetch into the cache (as dev); resumable
 playlist-player-sync status [playlist]  # what is cached
 playlist-player-sync pin <track> <url>  # choose a track's audio by hand
-playlist-player serve                   # the daemon; then open http://127.0.0.1:8765/
+playlist-player start                   # everything: daemon, overlay, and the page in the browser
+playlist-player serve                   # the daemon alone; then open http://127.0.0.1:8765/
 playlist-player overlay [--demo]        # the lyric line; --demo for positioning
 playlist-player ctl toggle              # play, pause, next, prev, stop, seek, volume
 ```
+
+## Starting and stopping it
+
+The **Playlist Player** launcher (menu and desktop) opens a Konsole window running
+`playlist-player start`. That window is the application: it stays open while the player
+runs, closing it (or Ctrl-C in it) stops the daemon, mpv and the overlay together, and
+the daemon saves its place first. Clicking the launcher while it is already running
+only opens the page. The window is held open after exit only when `start` failed.
+
+The launcher's icon is the package's own `server/static/icon.svg`, read from the
+deployed copy; the page uses the same file as its favicon. `konsole --desktopfile
+playlist-player` gives the window the launcher's identity, so the taskbar shows that
+icon instead of Konsole's.
 
 ## Where the pieces are
 
 | Piece | Source | Deployed to | By |
 |-------|--------|-------------|----|
-| Launchers | `users/ethan/localbin/playlist-player{,-sync}` | `~ethan/.local/bin/` | `ethan-bin` |
+| Launchers | `users/ethan/localbin/playlist-player{,-sync,.run.sh}` | `~ethan/.local/bin/` | `ethan-bin` |
+| Menu and desktop entry | `users/ethan/desktop-entries/playlist-player.desktop` | `~ethan/.local/share/applications/`, `~ethan/Desktop/` | `desktop-entries` |
 | Settings | `users/ethan/.config/playlist-player/settings.conf` | `~ethan/.config/playlist-player/` | `ethan-config` |
 | The package | `playlist-player` repo, `playlist_player/` (tracked files only) | `~ethan/.local/share/playlist-player/playlist_player/` | `installers/playlist-player.sh` |
 | Token whitelist | `system/etc-sudoers.d/devbridge-env` (`APIFY_TOKEN`) | `/etc/sudoers.d/` | `root-tier` |
