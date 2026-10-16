@@ -27,10 +27,10 @@ skills/
   into [`../../ethan/kde-taskbar-groups.conf`](../../ethan/kde-taskbar-groups.conf)
   via `add-to-taskbar/add-to-taskbar.sh`; `install.sh` asserts it onto the live
   widgets. See `operating-system/taskbar-shortcut-groups.md`.
-- **add-playlist** — add a Spotify playlist to playlist-player. Checks the cache
-  as dev, hands Ethan the one `playlist-player-sync <url>` command (the Apify
+- **add-playlist** — add a Spotify playlist to spotifixed. Checks the cache
+  as dev, hands Ethan the one `spotifixed-sync <url>` command (the Apify
   token is his), then reports status and offers `align`. Instructions-only. See
-  [`../../../applications/playlist-player.md`](../../../applications/playlist-player.md).
+  [`../../../applications/spotifixed.md`](../../../applications/spotifixed.md).
 - **brainstorm** — divergent precursor to `/plan`. Given a feature idea, surfaces
   adjacent ideas, pros/cons, and open questions in one sharp pass, ending with a
   nudge to go deeper. Instructions-only (no helper script).

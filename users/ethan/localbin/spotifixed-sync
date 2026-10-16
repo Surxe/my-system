@@ -1,21 +1,21 @@
 #!/usr/bin/env bash
-# playlist-player-sync -- ethan entry point for the dev-side half of playlist-player:
+# spotifixed-sync -- ethan entry point for the dev-side half of spotifixed:
 # fetching a playlist into the cache, and the commands that inspect, correct or add to it.
 #
-#   playlist-player-sync <playlist-url> [sync options]   fetch tracklist, audio, lyrics, covers
-#   playlist-player-sync status [playlist]               what is cached
-#   playlist-player-sync pin <track-id> <url|clear>      choose a track's audio by hand
-#   playlist-player-sync align [playlist] [options]      time each word against the audio (GPU)
+#   spotifixed-sync <playlist-url> [sync options]   fetch tracklist, audio, lyrics, covers
+#   spotifixed-sync status [playlist]               what is cached
+#   spotifixed-sync pin <track-id> <url|clear>      choose a track's audio by hand
+#   spotifixed-sync align [playlist] [options]      time each word against the audio (GPU)
 #
 # Runs AS ethan only long enough to read the ethan-owned secret, then hops to `dev` to
-# do the work. The work must be dev, not ethan: the playlist-player repo and its .venv
+# do the work. The work must be dev, not ethan: the spotifixed repo and its .venv
 # (yt-dlp) are dev-writable, so running them as ethan would execute dev-tree code with
 # ethan's privileges; and the cache they fill is dev's. `align` also needs the PyTorch
 # packages of the repo's requirements-align.txt in that .venv. dev running its own repo's code
 # is not an escalation.
 #
 # Secret model (same as clip-post): the Apify token lives ONLY in
-# ~/.config/playlist-player/secrets.env (chmod 600, ethan-owned, hand-maintained) --
+# ~/.config/spotifixed/secrets.env (chmod 600, ethan-owned, hand-maintained) --
 # never in a repo, never anywhere `dev` can read at rest. It is sourced here and carried
 # across sudo's env_reset by --preserve-env (whitelisted in
 # system/etc-sudoers.d/devbridge-env), so dev sees it only in the running process and it
@@ -27,7 +27,7 @@
 # my-system/users/install.sh -- ethan-bin copies every localbin file).
 set -uo pipefail
 
-SECRETS="$HOME/.config/playlist-player/secrets.env"
+SECRETS="$HOME/.config/spotifixed/secrets.env"
 
 case "${1:-}" in
     status | pin | sync | align)
@@ -61,6 +61,6 @@ sudo -u dev --preserve-env=APIFY_TOKEN -H bash -c '
     done
     export PATH
     umask 002
-    cd /srv/dev/repos/playlist-player || exit 1
-    exec .venv/bin/python -m playlist_player "$@"
+    cd /srv/dev/repos/spotifixed || exit 1
+    exec .venv/bin/python -m spotifixed "$@"
 ' _ "$command" "$@"
