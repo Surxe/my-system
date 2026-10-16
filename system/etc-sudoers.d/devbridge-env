@@ -24,4 +24,4 @@
 Defaults:ethan env_keep += "STEAM_USERNAME STEAM_PASSWORD"   # wrf-orchestrator: Exporter Steam login
 Defaults:ethan env_keep += "GH_DATA_REPO_PAT"                # wrf-orchestrator: Parser data-repo push
 Defaults:ethan env_keep += "CLIP_DISCORD_WEBHOOK"            # clip-post: Discord webhook upload
-Defaults:ethan env_keep += "APIFY_TOKEN"                     # playlist-player-sync: Apify tracklist fetch
+Defaults:ethan env_keep += "APIFY_TOKEN"                     # spotifixed-sync: Apify tracklist fetch

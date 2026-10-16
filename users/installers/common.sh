@@ -185,17 +185,17 @@ ensure_safe_dir() {   # $1 = absolute repo path
 CLAUDE_TTS_REPO="/srv/dev/repos/claude-tts"
 CLAUDE_TTS_BASE_REF="$(git -C "$CLAUDE_TTS_REPO" rev-parse --abbrev-ref --symbolic-full-name '@{u}' 2>/dev/null || echo origin/main)"
 
-# --- playlist-player: Spotify-playlist player with a lyric overlay. Lives in its
+# --- spotifixed: Spotify-playlist player with a lyric overlay. Lives in its
 # OWN repo. Its dev-side half (sync) runs from that repo as dev; the half that needs
 # Ethan's session (the daemon and the overlay) runs AS ethan from a COPY of the
-# playlist_player/ package, review-gated as one tree against that repo's approved
+# spotifixed/ package, review-gated as one tree against that repo's approved
 # upstream. The package needs only the standard library for those commands, so the
 # ethan side has no virtualenv.
 # The baseline is the remote's DEFAULT branch, never the checked-out branch's upstream:
 # that repo is usually on a feature branch, and dev can push one and track it, which
 # would make an unmerged branch compare equal to itself and pass the gate unprompted. ---
-PLAYLIST_PLAYER_REPO="/srv/dev/repos/playlist-player"
-PLAYLIST_PLAYER_BASE_REF="$(git -C "$PLAYLIST_PLAYER_REPO" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
+SPOTIFIXED_REPO="/srv/dev/repos/spotifixed"
+SPOTIFIXED_BASE_REF="$(git -C "$SPOTIFIXED_REPO" symbolic-ref -q --short refs/remotes/origin/HEAD 2>/dev/null || echo origin/main)"
 
 # --- timing helpers (used by install.sh's --debug per-step timing) ---
 # now_ms: current wall-clock time in integer milliseconds (bash 5 EPOCHREALTIME,

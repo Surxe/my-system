@@ -1,35 +1,35 @@
 #!/usr/bin/env bash
-# playlist-player -- ethan entry point for the parts of playlist-player that need the
+# spotifixed -- ethan entry point for the parts of spotifixed that need the
 # live session: the daemon (it owns mpv, so it needs Ethan's audio) and the lyric overlay
 # (it needs Ethan's Wayland display). `ctl` rides along because it is the same code.
 #
-#   playlist-player start              everything: the daemon, the overlay, and the page
+#   spotifixed start              everything: the daemon, the overlay, and the page
 #                                      in the browser; Ctrl-C or closing the terminal stops it
-#   playlist-player serve              the daemon alone; then open http://127.0.0.1:8765/
-#   playlist-player overlay [--demo]   the lyric line above other windows
-#   playlist-player ctl toggle         also: play, pause, next, prev, stop, seek, volume
+#   spotifixed serve              the daemon alone; then open http://127.0.0.1:8765/
+#   spotifixed overlay [--demo]   the lyric line above other windows
+#   spotifixed ctl toggle         also: play, pause, next, prev, stop, seek, volume
 #
 # Why these run AS ethan and do not hop to dev like most launchers here: dev cannot
 # reach Ethan's audio server or display (deliberately), and mpv and the process that
 # controls it must be the same user, because mpv's control socket can run programs.
 #
 # What runs is NOT the dev-writable repo. It is the review-gated COPY of the
-# playlist_player package under ~/.local/share/playlist-player, deployed by
-# my-system/users/install.sh (the playlist-player step), executed by the system python3.
+# spotifixed package under ~/.local/share/spotifixed, deployed by
+# my-system/users/install.sh (the spotifixed step), executed by the system python3.
 # The package needs nothing pip-installed for these commands, so there is no virtualenv
 # on this side and no third-party code runs as ethan.
 #
-# Syncing (network, yt-dlp, the Apify token) is the other launcher, playlist-player-sync,
+# Syncing (network, yt-dlp, the Apify token) is the other launcher, spotifixed-sync,
 # which does hop to dev.
 set -euo pipefail
 
-APP="$HOME/.local/share/playlist-player"
-CONFIG="$HOME/.config/playlist-player/settings.conf"
+APP="$HOME/.local/share/spotifixed"
+CONFIG="$HOME/.config/spotifixed/settings.conf"
 
 case "${1:-}" in
     start | serve | overlay | ctl) ;;
     sync | status | pin)
-        echo "playlist-player: '$1' runs on the dev side; use: playlist-player-sync $*" >&2
+        echo "spotifixed: '$1' runs on the dev side; use: spotifixed-sync $*" >&2
         exit 2
         ;;
     *)
@@ -38,8 +38,8 @@ case "${1:-}" in
         ;;
 esac
 
-if [ ! -d "$APP/playlist_player" ]; then
-    echo "playlist-player: not deployed at $APP; run my-system/users/install.sh" >&2
+if [ ! -d "$APP/spotifixed" ]; then
+    echo "spotifixed: not deployed at $APP; run my-system/users/install.sh" >&2
     exit 1
 fi
 
@@ -58,4 +58,4 @@ umask 002
 # -s: ignore ethan's user site-packages, so only the standard library and the system's
 # GTK bindings are importable alongside the reviewed copy.
 cd "$APP"
-exec /usr/bin/python3 -s -m playlist_player "$@"
+exec /usr/bin/python3 -s -m spotifixed "$@"
