@@ -14,7 +14,7 @@ fi
 #     CLAUDE.md-centric); the live neutral name is `AGENTS.md`. ---
 deploy_dev_tier() {
     local src="$REPO_ROOT/users/dev/CLAUDE.md" dst="$AGENTS_DIR/AGENTS.md"
-    [ -e "$src" ] || { say "dev-tier: no $src (build phase / run.sh should have created it)"; return; }
+    [ -e "$src" ] || { say "error: dev-tier: no $src (the build phase should have generated it)" >&2; exit 1; }
     install -D -m 0644 "$src" "$dst"
     say "dev-tier: installed (copy) $dst"
     ensure_agents_symlink "$dst" "$CLAUDE_DIR/CLAUDE.md"

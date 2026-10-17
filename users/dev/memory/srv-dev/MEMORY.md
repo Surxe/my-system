@@ -12,7 +12,6 @@ Workstation-local memories only. Universal memories (shared across both boxes, d
 - [todo done command](todo-done-command.md) — mark a todo complete with `todo done <id>`; reopen/rm round out the lifecycle
 - [tts command = no action](tts-command-no-action.md) — `!tts` shell calls are Ethan driving TTS; stay silent, don't act
 - [User-specific via my-system](user-specific-via-my-system.md) — new skills/aliases/shortcuts/statusbars go in my-system + install.sh, never edited in user files directly
-- [my-system generated files](my-system-generated-files.md) — my-system PRs often show auto-gen diffs in users/dev/CLAUDE.md + sections/repo-descriptions.md; edit blueprint/generators, not output
 - [Secrets for dev-run tools](secrets-for-dev-run-tools.md) — dev-run tool secrets live in ethan's space (dev can't read at rest), injected via an ethan launcher; never parked in ~dev
 - [WRF data structure](wrf-data-structure.md) — WRFrontiersDB data layout: /srv/dev/wrf/data working tree, the published Data repo, and icon_path resolution
 - [Phone MFA migration](phone-mfa-migration.md) — new-phone checklist: all MFA in MS Authenticator (iOS backs up via iCloud Keychain now); record accounts, check recovery codes, test before discarding old phone

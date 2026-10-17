@@ -10,12 +10,12 @@
 #      {{token}} with sections/<token>.md from this dir, else from dev-env's
 #      sections/ (the SHARED sections, e.g. {{shared}}, identical on every box).
 #
-# The resulting CLAUDE.md is installed (copied) to ~/.agents/AGENTS.md by
-# users/installers/dev-claude-md.sh, which symlinks ~/.claude/CLAUDE.md and
-# ~/.dsh/AGENTS.md to it (Claude Code + DeepSeek Harness global instructions).
+# The resulting CLAUDE.md is generated output (gitignored) and is installed (copied)
+# to ~/.agents/AGENTS.md by users/installers/dev-claude-md.sh, which symlinks
+# ~/.claude/CLAUDE.md and ~/.dsh/AGENTS.md to it (Claude Code + DeepSeek Harness
+# global instructions).
 #
-# If the dev-env clone (or its builder) is missing, this warns and keeps the last
-# committed CLAUDE.md rather than failing the deploy.
+# A missing dev-env clone or builder is a hard error: there is no fallback copy.
 #
 #   ./build-claude-md.sh [--force]   # --force re-fetches every repo description
 
@@ -26,8 +26,8 @@ DEV_ENV_REPO="$(cd "$REPO_ROOT/../../.." && pwd)/dev-env"
 BUILDER="$DEV_ENV_REPO/lib/build-agents-md.sh"
 
 if [ ! -x "$BUILDER" ]; then
-  echo "warning: no dev-env builder at $BUILDER — keeping the last built $REPO_ROOT/CLAUDE.md" >&2
-  exit 0
+  echo "error: no dev-env builder at $BUILDER (clone dev-env beside my-system)" >&2
+  exit 1
 fi
 
 exec "$BUILDER" \
