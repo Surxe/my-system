@@ -128,27 +128,64 @@ review_gate() {   # $1 = THIS repo's relative path
     review_gate_in "$REPO_ROOT" "$BASE_REF" "$1"
 }
 
-# --- review gate for a whole TREE: like review_gate_in, but one decision for every
-#     tracked file under a directory (a package of dozens of files would otherwise
-#     prompt dozens of times). On a difference it prints the --stat summary and how
-#     to see the full diff, then prompts once. Callers must deploy ONLY the tracked
-#     files (git ls-files): an untracked file never appears in a diff, so it must
-#     never be copied either. ---
-review_gate_tree_in() {   # $1 = repo root, $2 = base ref, $3 = repo-relative dir
-    local root="$1" base="$2" rel="$3"
+# --- review gate for a whole TREE, deployed from ONE COMMIT: one decision for a
+#     directory (a package of dozens of files would otherwise prompt dozens of
+#     times), and what is deployed is that directory exactly as committed, never the
+#     working tree. A working-tree copy mixes edited tracked files with new files git
+#     does not know yet, so an uncommitted change can deploy half of itself.
+#
+#     HEAD is resolved to a commit ONCE, before anything is shown: the diff reviewed
+#     and the tree deployed are the same commit, however the dev-writable repo moves
+#     meanwhile. If that commit's tree matches the approved base, it deploys without a
+#     prompt; otherwise the --stat (base..commit) is shown and asked about once.
+#     Uncommitted changes under the directory are reported and NOT deployed.
+#     On success the commit is left in GATED_COMMIT for deploy_tree_from_commit. ---
+GATED_COMMIT=""
+review_gate_commit_in() {   # $1 = repo root, $2 = base ref, $3 = repo-relative dir
+    local root="$1" base="$2" rel="$3" commit
+    GATED_COMMIT=""
     ensure_fetched "$root"
+    commit="$(git -C "$root" rev-parse --verify -q 'HEAD^{commit}')" \
+        || { say "!! $root has no commit to deploy"; return 1; }
+    if [ -n "$(git -C "$root" status --porcelain --untracked-files=all -- "$rel")" ]; then
+        warn "'$rel/' ($root) has uncommitted changes; they are NOT deployed (commit them to include them)"
+    fi
     if git -C "$root" rev-parse --verify -q "$base" >/dev/null; then
-        if git -C "$root" diff --quiet "$base" -- "$rel"; then
-            return 0   # every tracked file matches ethan-approved upstream
+        if git -C "$root" diff --quiet "$base" "$commit" -- "$rel"; then
+            GATED_COMMIT="$commit"
+            return 0   # the commit matches ethan-approved upstream
         fi
-        say "!! '$rel/' ($root) DIFFERS from approved $base:"
-        git -C "$root" --no-pager diff --stat "$base" -- "$rel" || true
-        say "   full diff: git -C $root diff $base -- $rel"
+        say "!! '$rel/' at ${commit:0:12} ($root, $(checkout_label "$root")) DIFFERS from approved $base:"
+        git -C "$root" --no-pager diff --stat "$base" "$commit" -- "$rel" || true
+        say "   full diff: git -C $root diff $base $commit -- $rel"
     else
         say "!! no upstream ($base) to compare against yet: '$rel/' ($root)"
     fi
-    local a=""; read -r -p "   install this privileged tree anyway? [y/N] " a </dev/tty || true
-    [ "$a" = y ] || [ "$a" = Y ]
+    local a=""; read -r -p "   install this privileged tree (commit ${commit:0:12}) anyway? [y/N] " a </dev/tty || true
+    { [ "$a" = y ] || [ "$a" = Y ]; } && GATED_COMMIT="$commit"
+}
+
+# deploy_tree_from_commit: replace <dest>/<dir> with <dir> exactly as it is in
+# <commit>, through a staging dir next to it so a failed extract leaves the old copy.
+# Directories 0755, files 0644. Prints the number of files deployed.
+deploy_tree_from_commit() {   # $1 = repo root, $2 = commit, $3 = repo-relative dir, $4 = dest parent
+    local root="$1" commit="$2" rel="$3" dest="$4" staging
+    install -d -m 0755 "$dest"
+    staging="$(mktemp -d "$dest/.staging.XXXXXX")"
+    if ! git -C "$root" archive --format=tar "$commit" -- "$rel" | tar -x --no-same-owner -C "$staging"; then
+        rm -rf "$staging"
+        return 1
+    fi
+    if [ ! -d "$staging/$rel" ]; then
+        rm -rf "$staging"
+        return 1
+    fi
+    find "$staging/$rel" -type d -exec chmod 0755 {} +
+    find "$staging/$rel" -type f -exec chmod 0644 {} +
+    find "$staging/$rel" -type f | wc -l
+    rm -rf "${dest:?}/$rel"
+    mv "$staging/$rel" "$dest/$rel"
+    rm -rf "$staging"
 }
 
 # --- todo tool: shared locations for the cross-repo `todo` CLI (deployed onto each

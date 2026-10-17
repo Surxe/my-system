@@ -19,7 +19,7 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 #
 # The launchers and ~/.config/spotifixed/settings.conf are ordinary files of THIS
 # repo, deployed by ethan-bin and ethan-config. See common.sh for SPOTIFIXED_REPO /
-# SPOTIFIXED_BASE_REF and review_gate_tree_in.
+# SPOTIFIXED_BASE_REF, review_gate_commit_in and deploy_tree_from_commit.
 PACKAGE="spotifixed"
 
 # One-time migration from the tool's old name, playlist-player (renamed 2026-10).
@@ -66,31 +66,20 @@ deploy_spotifixed() {
     done
     say "spotifixed: shared cache/ and state/ ready under $repo"
 
-    # ---- ethan side: one review-gated copy of the package's TRACKED files ----
-    # Tracked files only: the gate works on a git diff, and an untracked file dropped
-    # into the working tree would be in no diff, so it must not be deployed either.
-    review_gate_tree_in "$repo" "$SPOTIFIXED_BASE_REF" "$PACKAGE" \
+    # ---- ethan side: one review-gated copy of the package AS COMMITTED ----
+    # Deployed from one commit, never the working tree (see review_gate_commit_in):
+    # an uncommitted edit is reported and left out, so the copy is always a state
+    # of the package that existed as a whole.
+    review_gate_commit_in "$repo" "$SPOTIFIXED_BASE_REF" "$PACKAGE" \
         || { say "   skipped the spotifixed package"; return; }
 
-    local staging rel count=0
-    install -d -m 0755 "$app"
-    staging="$(mktemp -d "$app/.staging.XXXXXX")"
-    while IFS= read -r -d '' rel; do
-        [ -f "$repo/$rel" ] || continue   # tracked but deleted locally: nothing to copy
-        install -D -m 0644 "$repo/$rel" "$staging/$rel"
-        count=$((count + 1))
-    done < <(git -C "$repo" ls-files -z -- "$PACKAGE")
-    if [ "$count" -eq 0 ]; then
-        rm -rf "$staging"
-        warn "spotifixed: git listed no files under $repo/$PACKAGE — nothing deployed"
+    local count
+    if ! count="$(deploy_tree_from_commit "$repo" "$GATED_COMMIT" "$PACKAGE" "$app")"; then
+        warn "spotifixed: could not extract $PACKAGE from ${GATED_COMMIT:0:12} — the old copy is left in place"
         return
     fi
-    # Replace the old copy wholesale, so a file removed upstream does not linger.
-    rm -rf "${app:?}/$PACKAGE"
-    mv "$staging/$PACKAGE" "$app/$PACKAGE"
-    rm -rf "$staging"
-    chmod 0755 "$app" "$app/$PACKAGE"
-    say "ethan-tier: installed $count files to $app/$PACKAGE"
+    chmod 0755 "$app"
+    say "ethan-tier: installed $count files to $app/$PACKAGE (commit ${GATED_COMMIT:0:12})"
 
     # The copy must work on the bare system interpreter; say so now rather than at
     # first use if it does not.
