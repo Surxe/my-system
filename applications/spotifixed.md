@@ -59,14 +59,17 @@ it has already published its app data, so every Konsole window reports `org.kde.
 | Launchers | `users/ethan/localbin/spotifixed{,-sync,.run.sh}` | `~ethan/.local/bin/` | `ethan-bin` |
 | Menu and desktop entry | `users/ethan/desktop-entries/spotifixed.desktop` | `~ethan/.local/share/applications/`, `~ethan/Desktop/` | `desktop-entries` |
 | Settings | `users/ethan/.config/spotifixed/settings.conf` | `~ethan/.config/spotifixed/` | `ethan-config` |
-| The package | `spotifixed` repo, `spotifixed/` (tracked files only) | `~ethan/.local/share/spotifixed/spotifixed/` | `installers/spotifixed.sh` |
+| The package | `spotifixed` repo, `spotifixed/` as of its checked-out commit | `~ethan/.local/share/spotifixed/spotifixed/` | `installers/spotifixed.sh` |
 | Token whitelist | `system/etc-sudoers.d/devbridge-env` (`APIFY_TOKEN`) | `/etc/sudoers.d/` | `root-tier` |
 | Shared data | `spotifixed` repo, `cache/` and `state/` | in place (group `developers`, setgid, group-writable) | `installers/spotifixed.sh` |
 
-The package copy is review-gated as one tree against the spotifixed repo's
-approved default branch (`review_gate_tree_in` in `installers/common.sh`): if any tracked file
-differs, the deploy shows the `--stat` and asks once. Untracked files are never copied.
-Until that repo's work is merged to its default branch, every deploy will ask.
+The package copy is deployed from one commit, never the working tree
+(`review_gate_commit_in` and `deploy_tree_from_commit` in `installers/common.sh`). The
+checked-out commit is pinned first; if its `spotifixed/` differs from the repo's approved
+default branch, the deploy shows the `--stat` and asks once, then extracts exactly that
+commit. Uncommitted changes under `spotifixed/`, edited or new, are reported and not
+deployed: a working-tree copy once shipped edited files without the new modules they
+imported. Until a branch is merged to the default branch, every deploy of it will ask.
 
 Settings are repo-authoritative: edit `settings.conf` here and redeploy. To try a value
 first, pass it as a flag (`spotifixed overlay --overlay-margin-y 200 --demo`).

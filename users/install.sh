@@ -29,7 +29,7 @@
 #                                        -> ~ethan/.config/kglobalshortcutsrc   (per-key merge)
 #               (cross-repo) spotifixed/spotifixed/
 #                                        -> ~ethan/.local/share/spotifixed/spotifixed/
-#                                                                      (copy of tracked files; gated as a tree vs its origin/main)
+#                                                                      (extracted from the checked-out commit; gated vs its origin/main)
 #   root-tier   system/usr-local-sbin/*  -> /usr/local/sbin/*          (sudo install, 0755)
 #               system/etc-sudoers.d/*   -> /etc/sudoers.d/*           (sudo install, 0440 + visudo -c)
 #               system/etc-udev-rules.d/* -> /etc/udev/rules.d/*       (sudo install, 0644; reload+trigger on change)
