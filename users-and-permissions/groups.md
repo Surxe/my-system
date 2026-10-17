@@ -8,9 +8,22 @@ Shared access between:
 - `dev`
 - development tooling
 
-Used to share everything under `/srv/dev`. The permission convention that makes
-this work (setgid inheritance) is in
+Used to share everything under `/srv/dev`. It is also `dev`'s **primary group**
+(gid `1001`): `dev` has no per-user group, so its files default to `developers`.
+The permission convention (primary group + setgid inheritance) is in
 [filesystem-permissions.md](filesystem-permissions.md).
+
+Root commands to set `developers` as dev's primary group, replacing the default
+per-user group `adduser` creates (run by a sudo user):
+
+```bash
+sudo usermod -g developers dev                              # also regroups files under /home/dev
+sudo find / -xdev -group dev -exec chgrp -h developers {} +
+sudo groupdel dev
+sudo loginctl terminate-user dev                            # running processes keep the old gid
+```
+
+`/home/dev` is `0700`, so dev's home is not exposed to `ethan` through the group.
 
 > Confirm membership with `getent group developers` (run by `scripts/inventory.sh`).
 

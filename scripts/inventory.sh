@@ -65,6 +65,7 @@ run lsusb
 
 section "Users & groups (developers)"
 getent group developers || echo "(no 'developers' group)"
+echo "dev primary group: $(id -gn dev 2>/dev/null || echo '?') (expected: developers)"
 printf 'current user: %s (uid %s)\n' "$(id -un)" "$(id -u)"
 
 section "Enabled systemd units"
