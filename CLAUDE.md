@@ -63,8 +63,12 @@ Development files shared between `ethan` and `dev` use:
 
 ```
 owner: dev
-group: developers
+group: developers (dev's primary group)
 setgid inheritance (chmod 2775 on shared directories)
 ```
+
+`dev` has no group of its own: its primary group is `developers`, so anything it
+creates lands in `developers` even outside a setgid directory. Setgid is still
+needed for files `ethan` creates (his primary group is `ethan`).
 
 See [users-and-permissions/](users-and-permissions/filesystem-permissions.md) for the full model.

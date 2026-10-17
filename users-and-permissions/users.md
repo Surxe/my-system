@@ -8,6 +8,7 @@
 
 ## `dev` — development user
 
+- **UID:** `1001`; **primary group:** `developers` (no per-user `dev` group)
 - Purpose: development automation, Claude tooling, isolated development workflows.
 - **Not** a normal interactive account — don't treat it as one.
 

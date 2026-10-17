@@ -8,9 +8,26 @@ Shared access between:
 - `dev`
 - development tooling
 
-Used to share everything under `/srv/dev`. The permission convention that makes
-this work (setgid inheritance) is in
+Used to share everything under `/srv/dev`. It is also `dev`'s **primary group**
+(gid `1001`): `dev` has no per-user group, so its files default to `developers`.
+The permission convention (primary group + setgid inheritance) is in
 [filesystem-permissions.md](filesystem-permissions.md).
+
+### Primary-group change (2026-10-17)
+
+`dev` used to have Debian's default per-user group `dev` (gid `1002`), with
+`developers` only as a supplementary group. Files that bypassed setgid (moved in
+from elsewhere, recreated by tools such as pytest's cache) ended up `dev:dev`,
+which `ethan` can't write. Merged by a sudo user:
+
+```bash
+sudo usermod -g developers dev                              # also regroups files under /home/dev
+sudo find / -xdev -group dev -exec chgrp -h developers {} +
+sudo groupdel dev
+sudo loginctl terminate-user dev                            # old processes keep gid 1002
+```
+
+`/home/dev` stays `0700`, so the group change does not expose dev's home to `ethan`.
 
 > Confirm membership with `getent group developers` (run by `scripts/inventory.sh`).
 
