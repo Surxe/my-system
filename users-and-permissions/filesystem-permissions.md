@@ -13,9 +13,9 @@ setgid inheritance
 Two mechanisms put shared files in `developers`, and both are needed:
 
 - **dev's primary group is `developers`** (there is no `dev` group). Everything
-  `dev` creates is `developers`-owned by default, wherever it is created -- so
+  `dev` creates is `developers`-owned by default, wherever it is created, so
   files written elsewhere and moved in (a scratchpad, a tool's temp dir, a cache)
-  stay shared instead of arriving as `dev:dev`, which `ethan` couldn't write.
+  stay writable by `ethan`.
 - **setgid on shared directories** covers files `ethan` creates, since his primary
   group is `ethan`.
 
