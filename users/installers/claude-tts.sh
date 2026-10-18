@@ -64,33 +64,15 @@ deploy_claude_tts() {
     "${devrun[@]}" bash "$repo/setup/install-kokoro.sh" \
         || warn "claude-tts: kokoro bootstrap failed (check network / disk)"
 
-    # Wire the Stop hook into dev's settings.json (merge-only, idempotent). Harmless
-    # when off: `tts hook` no-ops unless a session ran `tts on`.
-    "${devrun[@]}" python3 - "$DEV_HOME/.claude/settings.json" <<'PY'
-import json, os, sys
-path = sys.argv[1]
-try:
-    with open(path, encoding="utf-8") as f:
-        data = json.load(f)
-    if not isinstance(data, dict):
-        data = {}
-except (OSError, ValueError):
-    data = {}
-cmd = "$HOME/.local/bin/tts hook"
-stop = data.setdefault("hooks", {}).setdefault("Stop", [])
-present = any(
-    isinstance(g, dict) and any(
-        isinstance(h, dict) and h.get("command") == cmd for h in g.get("hooks", [])
-    )
-    for g in stop
-)
-if not present:
-    stop.append({"hooks": [{"type": "command", "command": cmd}]})
-os.makedirs(os.path.dirname(path), exist_ok=True)
-with open(path, "w", encoding="utf-8") as f:
-    f.write(json.dumps(data, indent=2) + "\n")
-PY
-    say "dev-tier: wired Stop hook (tts hook) -> $DEV_HOME/.claude/settings.json"
+    # Wire the Stop hook into dev's settings.json (merge-only, idempotent) via
+    # dev-env's shared helper. Harmless when off: `tts hook` no-ops unless a session
+    # ran `tts on`. The helper refuses a settings.json that does not parse.
+    if "${devrun[@]}" python3 "$DEV_ENV_REPO/lib/claude-settings.py" \
+        --file "$DEV_HOME/.claude/settings.json" add-hook Stop '$HOME/.local/bin/tts hook'; then
+        say "dev-tier: wired Stop hook (tts hook) -> $DEV_HOME/.claude/settings.json"
+    else
+        warn "claude-tts: Stop hook not wired (settings.json unchanged, see above)"
+    fi
 
     # ---- shared spool ----
     # /srv/dev is ethan-owned and NOT dev-writable, so the OPERATOR (ethan/root)
