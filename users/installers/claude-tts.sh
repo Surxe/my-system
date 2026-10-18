@@ -8,8 +8,8 @@ source "$(cd "$(dirname "$(readlink -f "$0")")" && pwd)/common.sh"
 # spool; an ethan-side systemd USER path unit plays it. This step does what the
 # generic copies can't -- it spans both users and enables the units:
 #   dev side  (dev's OWN home, no review gate): tts CLI, narrate.py, kokoro_synth.py,
-#             the kokoro synth bootstrap, and the Stop hook wired into
-#             dev's settings.json (merge-only).
+#             the kokoro synth bootstrap, and claude-tts's declared hooks
+#             (hooks.json: the Stop hook) applied to dev's settings.json (merge-only).
 #   spool     (shared): /srv/dev/tts/queue, owned by dev, group-writable + setgid.
 #   ethan side(review-gated vs claude-tts's approved upstream): tts-speak + 4 units,
 #             then enable the two path watchers in Ethan's user systemd.
@@ -64,14 +64,15 @@ deploy_claude_tts() {
     "${devrun[@]}" bash "$repo/setup/install-kokoro.sh" \
         || warn "claude-tts: kokoro bootstrap failed (check network / disk)"
 
-    # Wire the Stop hook into dev's settings.json (merge-only, idempotent) via
-    # dev-env's shared helper. Harmless when off: `tts hook` no-ops unless a session
-    # ran `tts on`. The helper refuses a settings.json that does not parse.
+    # Apply claude-tts's declared hooks (hooks.json: the Stop hook) to dev's
+    # settings.json via dev-env's shared helper -- merge-only, idempotent. Harmless
+    # when off: `tts hook` no-ops unless a session ran `tts on`. The helper refuses
+    # a settings.json (or hook list) that does not parse.
     if "${devrun[@]}" python3 "$DEV_ENV_REPO/lib/claude-settings.py" \
-        --file "$DEV_HOME/.claude/settings.json" add-hook Stop '$HOME/.local/bin/tts hook'; then
-        say "dev-tier: wired Stop hook (tts hook) -> $DEV_HOME/.claude/settings.json"
+        --file "$DEV_HOME/.claude/settings.json" apply-hooks "$repo/hooks.json"; then
+        say "dev-tier: applied claude-tts hooks.json -> $DEV_HOME/.claude/settings.json"
     else
-        warn "claude-tts: Stop hook not wired (settings.json unchanged, see above)"
+        warn "claude-tts: hooks not applied (settings.json unchanged, see above)"
     fi
 
     # ---- shared spool ----
