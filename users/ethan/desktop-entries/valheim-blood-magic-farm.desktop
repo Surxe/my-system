@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: my-system  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Blood Magic Farming in Valheim
+Comment=Toggle a 10 s auto clicker for Valheim blood magic farming (CapsLock)
+Exec=/home/ethan/.local/bin/valheim-blood-magic-farm
+Icon=input-mouse
+Terminal=false
+Categories=Game;

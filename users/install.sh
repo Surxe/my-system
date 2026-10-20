@@ -27,6 +27,8 @@
 #               users/ethan/.config/**   -> ~ethan/.config/**          (copy 0644; e.g. fastfetch)
 #               users/ethan/kde-global-shortcuts.conf
 #                                        -> ~ethan/.config/kglobalshortcutsrc   (per-key merge)
+#               users/ethan/kde-xkb-options.conf
+#                                        -> ~ethan/.config/kxkbrc [Layout] Options (list merge)
 #               (cross-repo) spotifixed/spotifixed/
 #                                        -> ~ethan/.local/share/spotifixed/spotifixed/
 #                                                                      (extracted from the checked-out commit; gated vs its origin/main)
@@ -86,6 +88,7 @@ INSTALLERS=(
   spotifixed               # spotifixed: reviewed package copy -> ethan's ~/.local/share; shared cache/state dirs
   desktop-entries          # .desktop launchers -> ethan's menu + desktop
   ethan-shortcuts          # global hotkeys -> ~ethan/.config/kglobalshortcutsrc
+  ethan-xkb-options        # xkb options (caps:menu) merged into ~ethan/.config/kxkbrc
   ethan-plasmarc           # plasmarc tweaks (tooltip delay) -> ~ethan/.config/plasmarc
   ethan-plasmoids          # local Plasma widgets (launcher-group) -> ethan's ~/.local/share
   ethan-taskbar-groups     # assert launcher-group + minimized-TM config from conf

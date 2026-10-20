@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+#
+# valheim-blood-magic-farm - toggle an auto clicker for Blood Magic farming in
+# Valheim. One cycle (repeats until toggled off; first click is immediate):
+#   6 left clicks, 10 s apart (60 s), then 13 s instead of the usual 10 s;
+#   press Z, 2 s, left click, 3 s, press X, 2 s, left click; 10 s, repeat.
+# The Z/X sequence (3 s extra + 2 + 3 + 2) takes 10 s in game.
+# Bound to CapsLock (xkb caps:menu turns CapsLock into Menu; the global shortcut
+# binds Menu to this launcher), so running it again stops the clicker.
+#
+# Runs AS ethan. Clicks are injected with ydotool, which needs its daemon
+# (ydotoold, the packaged ydotool.service user unit) - started here on demand
+# rather than enabled at login, so the uinput socket only exists while farming.
+set -euo pipefail
+
+INTERVAL=10        # s between normal clicks
+CLICKS=6           # normal clicks per cycle (6 x 10 s = 60 s)
+PRE_SEQUENCE=13    # s after the last normal click before Z
+KEY_Z=44           # linux/input-event-codes.h
+KEY_X=45
+RUNDIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
+PIDFILE="$RUNDIR/valheim-blood-magic-farm.pid"
+SOCKET="${YDOTOOL_SOCKET:-$RUNDIR/.ydotool_socket}"   # ydotool + ydotoold default
+
+notify() { kdialog --passivepopup "$1" 2 2>/dev/null || true; }
+
+# --- toggle off: a live clicker loop exists -> stop it and the daemon ---
+if [ -f "$PIDFILE" ] && kill -0 "$(cat "$PIDFILE")" 2>/dev/null; then
+    kill "$(cat "$PIDFILE")" 2>/dev/null || true
+    rm -f "$PIDFILE"
+    systemctl --user stop ydotool.service 2>/dev/null || true
+    notify "Blood magic farming: OFF"
+    exit 0
+fi
+
+# --- toggle on ---
+systemctl --user start ydotool.service
+for _ in $(seq 30); do                      # wait for ydotoold's socket
+    [ -S "$SOCKET" ] && break
+    sleep 0.1
+done
+[ -S "$SOCKET" ] || { notify "Blood magic farming: ydotoold did not start"; exit 1; }
+
+click() { ydotool click 0xC0; }              # 0xC0 = left button down + up
+press() { ydotool key "$1:1" "$1:0"; }        # key down + up
+pause() { sleep "$1" & wait $!; }             # wait-able, so TERM stops it at once
+
+(
+    trap 'exit 0' TERM
+    while :; do
+        for ((i = 1; i < CLICKS; i++)); do
+            click; pause "$INTERVAL"
+        done
+        click; pause "$PRE_SEQUENCE"
+        press "$KEY_Z"; pause 2
+        click;          pause 3
+        press "$KEY_X"; pause 2
+        click;          pause "$INTERVAL"
+    done
+) >/dev/null 2>&1 &
+echo $! > "$PIDFILE"
+disown
+notify "Blood magic farming: ON"
