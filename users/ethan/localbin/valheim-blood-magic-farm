@@ -2,9 +2,8 @@
 #
 # valheim-blood-magic-farm - toggle an auto clicker for Blood Magic farming in
 # Valheim. One cycle (repeats until toggled off; first click is immediate):
-#   6 left clicks, 10 s apart (60 s), then 13 s instead of the usual 10 s;
-#   press Z, 2 s, left click, 3 s, press X, 2 s, left click; 10 s, repeat.
-# The Z/X sequence (3 s extra + 2 + 3 + 2) takes 10 s in game.
+#   click, INTERVAL, click, INTERVAL, click, INTERVAL, click, 2 s, Z, 2 s,
+#   click, 2 s, X, then the rest of INTERVAL so the cycle is INTERVAL x 4 long.
 # Bound to CapsLock (xkb caps:menu turns CapsLock into Menu; the global shortcut
 # binds Menu to this launcher), so running it again stops the clicker.
 #
@@ -13,9 +12,7 @@
 # rather than enabled at login, so the uinput socket only exists while farming.
 set -euo pipefail
 
-INTERVAL=10        # s between normal clicks
-CLICKS=6           # normal clicks per cycle (6 x 10 s = 60 s)
-PRE_SEQUENCE=13    # s after the last normal click before Z
+INTERVAL=12        # s between clicks, and the length of one cycle's regular slot
 KEY_Z=44           # linux/input-event-codes.h
 KEY_X=45
 RUNDIR="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}"
@@ -48,14 +45,13 @@ pause() { sleep "$1" & wait $!; }             # wait-able, so TERM stops it at o
 (
     trap 'exit 0' TERM
     while :; do
-        for ((i = 1; i < CLICKS; i++)); do
-            click; pause "$INTERVAL"
-        done
-        click; pause "$PRE_SEQUENCE"
+        click; pause "$INTERVAL"
+        click; pause "$INTERVAL"
+        click; pause "$INTERVAL"
+        click; pause 2
         press "$KEY_Z"; pause 2
-        click;          pause 3
-        press "$KEY_X"; pause 2
-        click;          pause "$INTERVAL"
+        click;          pause 2
+        press "$KEY_X"; pause $((INTERVAL - 6))   # 2 s + the rest of the slot
     done
 ) >/dev/null 2>&1 &
 echo $! > "$PIDFILE"
