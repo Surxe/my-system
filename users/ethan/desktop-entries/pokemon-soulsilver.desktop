@@ -1,0 +1,9 @@
+[Desktop Entry]
+# source: emu-saves  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=Pokemon SoulSilver
+Comment=Play SoulSilver in melonDS with the save synced through emu-saves
+Exec=/home/ethan/.local/bin/emu-play soulsilver
+Icon=/srv/dev/repos/my-system/users/ethan/desktop-entries/assets/soulsilver.png
+Terminal=false
+Categories=Game;
