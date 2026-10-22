@@ -13,6 +13,7 @@ Sourced by dev's `~/.bashrc` loader. Two sources feed `~dev/.bashrc.d/`, both as
 
 | File | Source | Contains |
 | --- | --- | --- |
+| `05-umask.sh` | this repo (box-specific) | `umask 002` so dev's new files are group-writable for ethan (see `users-and-permissions/filesystem-permissions.md`) |
 | `10-agents.sh` | dev-env (portable) | `cc` launcher (`claude --dangerously-skip-permissions`) + `ds` launcher (`dsh --profile dsh-tui`) + the mouse-release export |
 | `15-todo.sh` | this repo (box-specific) | todo cross-box sync env (`TODO_HUB_REMOTE`, `TODO_CLASSIFY_REMOTE`, remote classify cmd) |
 | `20-hs.sh` | this repo (box-specific) | `hs` — key-authenticated SSH into the home-server (interactive shell, or `hs cc` to land in Claude on the box) |
