@@ -17,17 +17,84 @@ OWNER=Surxe
 DEVACCT=Surxe-dev
 BRANCH=main
 
-usage(){ echo "usage: devscaffold <reponame> [--public]" >&2; exit 2; }
+usage(){
+    echo "usage: devscaffold <reponame> [--public|--private]" >&2
+    echo "       devscaffold --fork <owner>/<repo> [<reponame>]" >&2
+    exit 2
+}
 
+# Strict arg shapes -- this runs as ethan, so nothing free-form reaches gh api.
+NAME_RE='^[A-Za-z0-9._-]+$'
+SLUG_RE='^[A-Za-z0-9-]+/[A-Za-z0-9._-]+$'
 
-# Visibility
+# Steps 2+3 (collaborator + ruleset) are shared by create and fork.
+grant_and_protect(){
+    local name="$1" ref="$2"
+
+    # 2. grant the dev automation account push (Write) access
+    gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
+
+    # 3. BEST-EFFORT ruleset from the SHARED definition (same file protect-repo.sh
+    #    uses, deployed by install.sh), targeting $ref. free-plan private repos
+    #    return 403; warn + continue so the repo + collaborator still stand and no
+    #    orphan is left behind.
+    local RULESET_JSON=/usr/local/share/devscaffold/protect-core.json
+    if [ ! -r "$RULESET_JSON" ]; then
+        echo "warning: $RULESET_JSON missing — no ruleset applied (run install.sh to" \
+             "deploy it); repo + collaborator still stand" >&2
+    elif ! jq --arg r "$ref" '.conditions.ref_name.include = [$r]' "$RULESET_JSON" \
+            | gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1
+    then
+        echo "warning: could not apply ruleset to $ref — no server-side merge gate" \
+             "on this repo (free plan private repos need GitHub Pro)" >&2
+    fi
+}
+
+MERGE_POLICY_JSON=/usr/local/share/devscaffold/merge-policy.json
+
+# --- fork mode: fork <owner>/<repo> into $OWNER, then apply the same policy ---
+if [ "${1:-}" = "--fork" ]; then
+    src="${2:-}"; name="${3:-${src##*/}}"
+    [[ "$src" =~ $SLUG_RE ]] && [[ "$name" =~ $NAME_RE ]] || usage
+    [ "${src%%/*}" != "$OWNER" ] || { echo "refusing to fork $OWNER's own repo" >&2; exit 1; }
+    gh repo view "$src" >/dev/null 2>&1 \
+        || { echo "source not found or not visible to ethan: $src" >&2; exit 1; }
+    if gh repo view "$OWNER/$name" >/dev/null 2>&1; then
+        echo "already exists on GitHub: $OWNER/$name" >&2; exit 1
+    fi
+
+    # 1. fork (all branches). The API returns 202 and creates the fork async.
+    gh api -X POST "repos/$src/forks" -f name="$name" >/dev/null
+    for _ in $(seq 1 60); do
+        gh api "repos/$OWNER/$name/branches?per_page=1" --jq 'length' 2>/dev/null \
+            | grep -qv '^0$' && break
+        sleep 2
+    done
+    gh api "repos/$OWNER/$name" >/dev/null 2>&1 \
+        || { echo "fork of $src did not appear as $OWNER/$name within 120s" >&2; exit 1; }
+
+    # Standard merge policy, same shared definition as the create path.
+    if [ -r "$MERGE_POLICY_JSON" ]; then
+        gh api -X PATCH "repos/$OWNER/$name" --input "$MERGE_POLICY_JSON" >/dev/null
+    else
+        echo "warning: $MERGE_POLICY_JSON missing — fork keeps GitHub's default merge" \
+             "policy (run install.sh, then set-merge-policy.sh $name)" >&2
+    fi
+
+    # The fork already has branches, so the default-branch alias resolves.
+    grant_and_protect "$name" "~DEFAULT_BRANCH"
+    echo "https://github.com/$OWNER/$name.git"   # plain remote URL only
+    exit 0
+fi
+
+# --- create mode ---
 name="${1:-}"; vis="public"           # default public (free-plan merge gate works)
 case "${2:-}" in
     ""|--public) vis="public"  ;;
     --private)   vis="private" ;;
     *) usage ;;
 esac
-[ -n "$name" ] || usage
+[[ "$name" =~ $NAME_RE ]] || usage
 
 if gh repo view "$OWNER/$name" >/dev/null 2>&1; then
     echo "already exists on GitHub: $OWNER/$name" >&2; exit 1
@@ -39,7 +106,6 @@ fi
 #    set-merge-policy.sh also applies to existing repos, so there is one copy to
 #    maintain; here we merge {name, private} into it to form the create body.
 priv=false; [ "$vis" = private ] && priv=true
-MERGE_POLICY_JSON=/usr/local/share/devscaffold/merge-policy.json
 if [ -r "$MERGE_POLICY_JSON" ]; then
     create_body=$(jq --arg name "$name" --argjson priv "$priv" \
         '. + {name: $name, private: $priv}' "$MERGE_POLICY_JSON")
@@ -51,23 +117,8 @@ else
 fi
 printf '%s' "$create_body" | gh api -X POST /user/repos --input - >/dev/null
 
-# 2. grant the dev automation account push (Write) access
-gh api -X PUT "repos/$OWNER/$name/collaborators/$DEVACCT" -f permission=push >/dev/null
-
-# 3. BEST-EFFORT ruleset from the SHARED definition (same file protect-repo.sh
-#    uses, deployed by install.sh). Target this brand-new repo's default branch
-#    by name -- at creation ~DEFAULT_BRANCH isn't resolvable yet. free-plan
-#    private repos return 403; warn + continue so the repo + collaborator still
-#    stand and no orphan is left behind.
-RULESET_JSON=/usr/local/share/devscaffold/protect-core.json
-if [ ! -r "$RULESET_JSON" ]; then
-    echo "warning: $RULESET_JSON missing — no ruleset applied (run install.sh to" \
-         "deploy it); repo + collaborator still stand" >&2
-elif ! jq --arg r "refs/heads/$BRANCH" '.conditions.ref_name.include = [$r]' "$RULESET_JSON" \
-        | gh api -X POST "repos/$OWNER/$name/rulesets" --input - >/dev/null 2>&1
-then
-    echo "warning: could not apply $BRANCH ruleset — no server-side merge gate" \
-         "on this repo (free plan private repos need GitHub Pro)" >&2
-fi
+# 2+3. collaborator + ruleset. Target this brand-new repo's default branch by
+#      name -- at creation ~DEFAULT_BRANCH isn't resolvable yet.
+grant_and_protect "$name" "refs/heads/$BRANCH"
 
 echo "https://github.com/$OWNER/$name.git"   # plain remote URL only

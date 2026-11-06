@@ -165,6 +165,15 @@ on a free plan this 403s for private repos, so it warns and continues rather tha
 abort (no orphan repos; see "Merge gate on a free plan"). It prints only the plain
 remote URL. Read the file for the exact code.
 
+`devscaffold --fork <owner>/<repo> [<name>]` (behind `devrepo fork`) swaps step (1)
+for `POST /repos/<owner>/<repo>/forks` into `Surxe`, polls until the async fork has
+branches, then `PATCH`es the same merge-policy JSON onto it; steps (2) and (3) are
+shared, with the ruleset targeting `~DEFAULT_BRANCH` (which a fork already has).
+Both modes validate names/slugs against a fixed character set before anything
+reaches `gh api`. Forking needs ethan's token to *see* the source (a private
+upstream must be shared with `Surxe`); a fine-grained PAT scoped to `Surxe` only may
+not be able to read another owner's private repo, in which case use a classic PAT.
+
 That merge policy is a single shared definition: for a repo created some other way
 (e.g. the GitHub UI), re-apply the same fields with
 [`scripts/set-merge-policy.sh <repo>`](../scripts/set-merge-policy.sh) (run as
@@ -178,7 +187,7 @@ Deployed to `/etc/sudoers.d/devscaffold` (`0440`); `install.sh` validates with
 `dev ALL=(ethan) NOPASSWD: /usr/local/sbin/devscaffold`. `sudo`'s `env_reset`
 strips dev-supplied `GIT_CONFIG`/`HOME`/`LD_PRELOAD`/`PATH`; the script re-asserts
 `HOME`/`PATH` regardless. Argument freedom is bounded by the script being fixed,
-arg-validated code that only creates repos — the same trust model as `devperms`
+arg-validated code that only creates (or forks into) Surxe repos — the same trust model as `devperms`
 trusting its path check.
 
 ### Token scopes for `devscaffold`

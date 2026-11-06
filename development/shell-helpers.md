@@ -26,11 +26,12 @@ and the two-identity git split in [git-workflow.md](git-workflow.md).
 | `devsafe_dev [dir]` | Same, but for **dev** — runs git as `sudo -u dev -H` so it writes `/home/dev/.gitconfig`. |
 | `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b main` + `remote add origin` + empty initial commit + `push -u origin main` (seeds & connects `main` on both sides), perms + both safe-dirs + `devaccept` + `devsh`. |
 | `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh` (plus `devaccept` only when `<profile>` is `Surxe`). Repo must already exist on GitHub. |
+| `devrepo fork <profile>/<repo> [<newname>]` | Like `new`, but seeded from an existing repo: `devscaffold --fork` (as ethan) forks it into `Surxe` (all branches), applies the shared merge policy, adds `Surxe-dev`, and applies the ruleset to the default branch. Then `git clone` the `Surxe` fork into `/srv/dev/repos/<newname or repo>`, add `upstream` -> the source repo, and run the same tail as `new` (perms + both safe-dirs + `devaccept` + `devsh`). |
 | `devaccept` | As **dev**: accept any pending `Surxe-dev` repository-collaborator invitations, using the dev PAT from dev's credential store. Idempotent. |
 
-`devrepo` (both modes) refuses to clobber an existing destination and validates its
-argument shape (`clone` needs a `profile/repo` slug; `new` rejects a slug with `/`).
-The two modes share one tail: perms + both safe-dirs + `devaccept` + `cd` + `devsh`.
+`devrepo` (all modes) refuses to clobber an existing destination and validates its
+argument shape (`clone` needs a `profile/repo` slug; `new` rejects a slug with `/`; `fork` needs a slug and rejects a `<newname>` with `/`).
+The modes share one tail: perms + both safe-dirs + `devaccept` + `cd` + `devsh`.
 `devaccept` runs only when the repo is owned by `Surxe` (the account whose repos
 invite `Surxe-dev`) — `new` always is, and `clone` gates on the `<profile>` slug —
 so cloning a third-party repo skips the invite poll entirely.
@@ -100,7 +101,7 @@ Files in `~/.bashrc.d/`:
 | `10-devsh.sh` | `devsh` |
 | `20-devperms.sh` | `devperms` |
 | `30-devsafe.sh` | `devsafe_ethan`, `devsafe_dev` |
-| `40-devrepo.sh` | `devrepo` (`new` / `clone` modes), `devaccept` |
+| `40-devrepo.sh` | `devrepo` (`new` / `clone` / `fork` modes), `devaccept` |
 
 **Numeric prefixes are cosmetic.** Sourcing only *defines* functions; bash
 resolves the names a function calls (e.g. `devrepo` → `devperms`) at **call**

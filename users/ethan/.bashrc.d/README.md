@@ -9,5 +9,5 @@ loader. See `development/shell-helpers.md`.
 | `10-devsh.sh` | present | `devsh` |
 | `20-devperms.sh` | present | `devperms` (the shell wrapper that calls `sudo /usr/local/sbin/devperms`) |
 | `30-devsafe.sh` | present | `devsafe_ethan`, `devsafe_dev` (the repo and its submodules), `devsafe_paths` |
-| `40-devrepo.sh` | present | `devrepo` (`new`/`clone`), `devaccept` |
+| `40-devrepo.sh` | present | `devrepo` (`new`/`clone`/`fork`), `devaccept` |
 | `50-localbin.sh` | present | `~/.local/bin` on `PATH` |
