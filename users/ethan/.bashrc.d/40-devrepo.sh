@@ -40,8 +40,9 @@ devaccept() {
 # --- unified repo helper: create-or-clone under /srv/dev/repos, then work as dev ---
 #   devrepo new   <reponame> [--private|--public]   (default: public)
 #   devrepo clone <profile>/<reponame>              (must already exist on GitHub)
+#   devrepo fork  <profile>/<reponame> [<newname>]  (fork into Surxe, then as `new`)
 devrepo() {
-    local mode="${1:-}" dest reponame slug url owner
+    local mode="${1:-}" dest reponame slug url owner upstream=""
     shift 2>/dev/null || true
 
     case "$mode" in
@@ -75,8 +76,24 @@ devrepo() {
             [ -e "$dest" ] && { echo "already exists: $dest" >&2; return 1; }
             git clone "$url" "$dest" || return 1
             ;;
+        fork)
+            # Like `new` (Surxe-owned remote, Surxe-dev collaborator, merge policy,
+            # ruleset -- all via devscaffold), but seeded from an existing repo.
+            slug="${1%.git}"
+            reponame="${2:-${slug##*/}}"
+            owner="Surxe"   # the fork always lands under Surxe
+            dest="/srv/dev/repos/$reponame"
+            if [ -z "$slug" ] || [ "$slug" = "${slug##*/}" ] || [[ "$reponame" == */* ]]; then
+                echo "usage: devrepo fork <profile>/<reponame> [<newname>]" >&2; return 1
+            fi
+            [ -e "$dest" ] && { echo "already exists: $dest" >&2; return 1; }
+            url="$(sudo -u ethan -H /usr/local/sbin/devscaffold --fork "$slug" "$reponame")" || return 1
+            git clone "$url" "$dest"                                         || return 1
+            git -C "$dest" remote add upstream "https://github.com/${slug}.git" || return 1
+            upstream="$slug"
+            ;;
         *)
-            echo "usage: devrepo <new|clone> ..." >&2; return 1
+            echo "usage: devrepo <new|clone|fork> ..." >&2; return 1
             ;;
     esac
 
@@ -90,6 +107,7 @@ devrepo() {
     if [ "$owner" = "Surxe" ]; then
         devaccept "$reponame" || echo "warning: could not auto-accept invitations — accept manually" >&2
     fi
+    [ -n "$upstream" ] && echo "devrepo: origin = Surxe/$reponame, upstream = $upstream"
     cd "$dest" || return 1
     devsh
 }
