@@ -1,0 +1,10 @@
+[Desktop Entry]
+# source: UltimatePoKeSync  # via /add-shortcut (do not hand-edit; regenerate)
+Type=Application
+Name=UltimatePoKeSync (melonDS)
+Comment=Launch UltimatePoKeSync (melonDS)
+Exec=env UPKS_MELONDS_PORT=3333 /usr/bin/dotnet /srv/dev/repos/UltimatePoKeSync/src/UltimatePoKeSync.App/bin/Debug/net10.0/UltimatePoKeSync.dll
+Path=/srv/dev/repos/UltimatePoKeSync/src/UltimatePoKeSync.App/bin/Debug/net10.0
+Icon=/srv/dev/repos/UltimatePoKeSync/src/UltimatePoKeSync.App/Assets/app-icon.png
+Terminal=false
+Categories=Utility;
