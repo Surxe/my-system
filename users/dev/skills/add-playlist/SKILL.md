@@ -1,10 +1,11 @@
 ---
 name: add-playlist
 description: >-
-  Add a Spotify playlist to spotifixed: check whether it is already cached,
-  hand Ethan the one sync command that needs his Apify token, then report what
-  landed and what needs a hand-picked audio. Use whenever Ethan wants to add,
-  fetch, or sync a new playlist into spotifixed.
+  Add a Spotify playlist to spotifixed, or refresh one already added: check
+  whether it is cached, hand Ethan the one sync command that needs his Apify
+  token, then report what landed, what changed, and what needs a hand-picked
+  audio. Use whenever Ethan wants to add, fetch, sync, refresh or update a
+  playlist in spotifixed, or see what changed on Spotify.
 ---
 
 # Add a playlist to spotifixed
@@ -30,10 +31,9 @@ none was given), and run as dev:
 
 - **"is not cached"**: new playlist, go to Step 2.
 - **A summary**: the track list is already cached, so no token is needed. Say
-  so; if Ethan wants it refreshed or completed, run
+  so; if Ethan wants it completed, run
   `.venv/bin/python -m spotifixed sync '<playlist>'` yourself (it is
-  resumable). Fetching the track list again (`--refresh-tracklist`) is a paid
-  run and needs the token, so that one goes to Ethan as in Step 2.
+  resumable). If he wants it updated to match Spotify, see Refreshing below.
 
 ## Step 2 -- Hand off the sync (Ethan only)
 
@@ -66,6 +66,31 @@ Offer the optional word timing, which needs no token and runs as dev on the GPU
 `.venv/bin/python -m spotifixed align '<playlist>'`.
 
 The new playlist shows up in the player's page on its own; nothing needs restarting.
+
+## Refreshing a cached playlist
+
+When Ethan wants a cached playlist brought in line with Spotify, fetching the
+track list again is a paid run that needs the token, so it goes to Ethan. Hand
+him, for his own terminal:
+
+```
+spotifixed-sync '<playlist url>' --refresh-tracklist --only tracklist
+```
+
+`--only tracklist` fetches the list and nothing else. The refresh archives the
+old list under `cache/playlists/<id>/history/` and prints what changed itself;
+do not diff track lists by hand or by reading them. Once he says it ran, show
+the changes as dev with:
+
+```
+.venv/bin/python -m spotifixed diff '<playlist>'
+```
+
+and summarize: added, removed (they keep their files and settings), under a
+new ID (settings and cached files were carried across automatically), and
+changed details, noting any turned-off or offset tracks it lists. If anything
+was added, run `sync '<playlist>'` as dev to fetch it (no token needed), then
+report as in Step 3.
 
 ## Constraints
 
