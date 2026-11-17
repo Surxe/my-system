@@ -1,0 +1,10 @@
+# Installed to /etc/sudoers.d/devsh (mode 0440, root:root).
+# Two ethan-side NOPASSWD grants, captured verbatim from the live drop-in:
+#   - ethan -> dev: the devsh bridge. devsh and every ethan launcher in
+#     ~/.local/bin hop work to dev through `sudo -u dev bash ...`.
+#   - ethan -> root: devperms, the fixed program that normalizes repo
+#     permissions for the dev/ethan split (wrapped by users/ethan/.bashrc.d/20-devperms.sh).
+# Env vars carried across the dev hop are whitelisted in devbridge-env.
+# See users-and-permissions/sudo-policy.md.
+ethan ALL=(dev) NOPASSWD: /bin/bash
+ethan ALL=(root) NOPASSWD: /usr/local/sbin/devperms

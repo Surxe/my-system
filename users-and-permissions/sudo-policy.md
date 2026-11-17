@@ -26,11 +26,16 @@ Ethan may run commands as `dev` without a password. This is what `devsh`
 every ethan-owned launcher in `~/.local/bin` (e.g. `clip-post`, `wrf-orchestrator`,
 `clip-db-pipeline`, `merge-clip-audio`, `spotifixed-sync`) rely on to hop work to `dev`.
 
-> **TODO — capture the bridge RULE.** The grant itself (the `ethan ALL=(dev)
-> NOPASSWD: ...` line) currently lives only in a live `/etc/sudoers.d/` drop-in and
-> is not yet tracked in this repo. Recover it (`sudo grep -rl 'ALL=(dev)'
-> /etc/sudoers.d/`), then add it as `system/etc-sudoers.d/devbridge` and document it
-> here. Do NOT guess it — a wrong rule breaks every `sudo -u dev`.
+The grant is `bash` as `dev`, which is what makes it a full shell bridge:
+
+```
+ethan ALL=(dev) NOPASSWD: /bin/bash
+```
+
+Drop-in: [`system/etc-sudoers.d/devsh`](../system/etc-sudoers.d/devsh) (it also
+carries the [devperms](#ethan---root-devperms) grant). Because every hop is `bash`,
+launchers must invoke `sudo -u dev bash ...`; a bare `sudo -u dev <cmd>` is not
+covered by this rule.
 
 ### env whitelist for the bridge
 
@@ -72,3 +77,16 @@ containerd.service`), so this grant cannot start/stop/restart any other unit. Un
 the two dev/ethan bridges above, this one does not cross the automation boundary — it
 is `ethan` acting on the host, kept here so every NOPASSWD grant on the box has one
 home.
+
+## ethan -> root (devperms)
+
+`devperms` ([`users/ethan/.bashrc.d/20-devperms.sh`](../users/ethan/.bashrc.d/20-devperms.sh))
+re-applies the shared `ethan:developers` + setgid permissions to a repo. The root-side
+program refuses any path outside `/srv/dev/repos`:
+
+```
+ethan ALL=(root) NOPASSWD: /usr/local/sbin/devperms
+```
+
+Source: [`system/usr-local-sbin/devperms`](../system/usr-local-sbin/devperms); grant in
+the [`devsh`](../system/etc-sudoers.d/devsh) drop-in alongside the dev bridge.
