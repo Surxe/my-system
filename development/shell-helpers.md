@@ -8,40 +8,42 @@ git-`safe.directory` for **both** identities, then drop into a `dev` shell.
 **Canonical source in this repo:** ethan's modules live under
 [`users/ethan/.bashrc.d/`](../users/ethan/.bashrc.d/) and the host scripts under
 [`system/usr-local-sbin/`](../system/usr-local-sbin/); deploy with
-[`users/install.sh`](../users/install.sh). (Only `40-devrepo.sh` is captured so
-far — `10/20/30-*.sh` still need copying in from ethan's home; see that dir's
-`README.md`.)
+[`users/install.sh`](../users/install.sh). `devrepo` itself is a **bin**, not a
+function: [`users/ethan/localbin/devrepo`](../users/ethan/localbin/devrepo), deployed
+to `~ethan/.local/bin`. It sources the deployed `10/20/30-*.sh` modules for
+`devsh` / `devperms` / `devsafe_*`. Run `devrepo --help` for usage.
 
 See the permission model in
 [../users-and-permissions/filesystem-permissions.md](../users-and-permissions/filesystem-permissions.md)
 and the two-identity git split in [git-workflow.md](git-workflow.md).
 
-## The functions
+## The functions (and the `devrepo` bin)
 
-| Function | Purpose |
+| Command | Purpose |
 | --- | --- |
 | `devsh` | Open a shell as the `dev` user, cd'd to `$PWD` (fallback `/srv/dev`). |
 | `devperms [dir]` | Fix shared perms on a repo via `sudo /usr/local/sbin/devperms` (defaults to `$PWD`). |
 | `devsafe_ethan [dir]` | Idempotently add `dir` to git `safe.directory` for **ethan** (`~/.gitconfig`). |
 | `devsafe_dev [dir]` | Same, but for **dev** — runs git as `sudo -u dev -H` so it writes `/home/dev/.gitconfig`. |
-| `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b main` + `remote add origin` + empty initial commit + `push -u origin main` (seeds & connects `main` on both sides), perms + both safe-dirs + `devaccept` + `devsh`. |
-| `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh` (plus `devaccept` only when `<profile>` is `Surxe`). Repo must already exist on GitHub. |
-| `devrepo fork <profile>/<repo> [<newname>]` | Like `new`, but seeded from an existing repo: `devscaffold --fork` (as ethan) forks it into `Surxe` (all branches), applies the shared merge policy, adds `Surxe-dev`, and applies the ruleset to the default branch. Then `git clone` the `Surxe` fork into `/srv/dev/repos/<newname or repo>`, add `upstream` -> the source repo, and run the same tail as `new` (perms + both safe-dirs + `devaccept` + `devsh`). |
-| `devaccept` | As **dev**: accept any pending `Surxe-dev` repository-collaborator invitations, using the dev PAT from dev's credential store. Idempotent. |
+| `devrepo new <repo> [--private\|--public]` | Create the GitHub remote via `devscaffold` (as ethan, **default public**), then local `git init -b main` + `remote add origin` + empty initial commit + `push -u origin main` (seeds & connects `main` on both sides), perms + both safe-dirs + `devrepo accept` + `devsh`. |
+| `devrepo clone <profile>/<repo>` | `git clone https://github.com/<profile>/<repo>.git` (HTTPS) into `/srv/dev/repos/<repo>`, then perms + both safe-dirs + `devsh` (plus `devrepo accept` only when `<profile>` is `Surxe`). Repo must already exist on GitHub. |
+| `devrepo fork <profile>/<repo> [<newname>]` | Like `new`, but seeded from an existing repo: `devscaffold --fork` (as ethan) forks it into `Surxe` (all branches), applies the shared merge policy, adds `Surxe-dev`, and applies the ruleset to the default branch. Then `git clone` the `Surxe` fork into `/srv/dev/repos/<newname or repo>`, add `upstream` -> the source repo, and run the same tail as `new` (perms + both safe-dirs + `devrepo accept` + `devsh`). |
+| `devrepo accept [<repo>]` | As **dev**: accept any pending `Surxe-dev` repository-collaborator invitations, using the dev PAT from dev's credential store. With `<repo>`, waits up to 20s for that invite. Idempotent. Formerly the `devaccept` function. |
+| `devrepo -h` / `--help` | Print usage (also `devrepo help`, `devrepo <mode> --help`). |
 
 `devrepo` (all modes) refuses to clobber an existing destination and validates its
 argument shape (`clone` needs a `profile/repo` slug; `new` rejects a slug with `/`; `fork` needs a slug and rejects a `<newname>` with `/`).
-The modes share one tail: perms + both safe-dirs + `devaccept` + `cd` + `devsh`.
-`devaccept` runs only when the repo is owned by `Surxe` (the account whose repos
+The modes share one tail: perms + both safe-dirs + `devrepo accept` + `cd` + `devsh`.
+The accept step runs only when the repo is owned by `Surxe` (the account whose repos
 invite `Surxe-dev`) — `new` always is, and `clone` gates on the `<profile>` slug —
 so cloning a third-party repo skips the invite poll entirely.
 
-### Auto-accepting the `Surxe-dev` invitation (`devaccept`)
+### Auto-accepting the `Surxe-dev` invitation (`devrepo accept`)
 
 `devscaffold` adds `Surxe-dev` as a collaborator, which on personal repos creates a
 **pending invitation** the invited account must accept before its PAT can push.
 Acceptance can only be done *by the invitee*, so it can't live in `devscaffold`
-(which runs as ethan) — it runs as **dev**. `devaccept` reads the dev PAT from dev's
+(which runs as ethan) — it runs as **dev**. `devrepo accept` reads the dev PAT from dev's
 `credential.helper store`, lists `GET /user/repository_invitations`, and `PATCH`es
 each to accept. It's idempotent (no invites → no-op) and runs in the shared tail so
 both `new` and `clone` leave the dev identity immediately able to push.
@@ -59,7 +61,7 @@ ruleset. Those account-side actions need **ethan's** PAT, so it calls the
 root-owned wrapper `/usr/local/sbin/devscaffold` via a narrow `sudo -u ethan` rule:
 
 ```bash
-url="$(sudo -u ethan -H /usr/local/sbin/devscaffold "$reponame" "${2:-}")" || return 1
+url="$(sudo -u ethan -H /usr/local/sbin/devscaffold "$reponame" "${2:-}")" || exit 1
 git init -b main "$dest"
 git -C "$dest" remote add origin "$url"
 git -C "$dest" commit --allow-empty -m "Initial commit"
@@ -101,10 +103,9 @@ Files in `~/.bashrc.d/`:
 | `10-devsh.sh` | `devsh` |
 | `20-devperms.sh` | `devperms` |
 | `30-devsafe.sh` | `devsafe_ethan`, `devsafe_dev` |
-| `40-devrepo.sh` | `devrepo` (`new` / `clone` / `fork` modes), `devaccept` |
 
 **Numeric prefixes are cosmetic.** Sourcing only *defines* functions; bash
-resolves the names a function calls (e.g. `devrepo` → `devperms`) at **call**
+resolves the names a function calls (e.g. `devsafe_dev` → `devsafe_paths`) at **call**
 time, by which point every file has been sourced. Order would only matter if a
 file *executed* code at source time that depended on another file — none of these
 do. Prefixes are kept purely as human-facing ordering and as cheap insurance if
@@ -115,3 +116,16 @@ such a file is ever added.
 - These live in `.bashrc.d/` rather than `~/.bash_aliases` because they are
   functions; `~/.bash_aliases` is still fine for plain `alias x=…` lines.
 - Applied by ethan directly — the `dev` user cannot write ethan's home.
+
+### Retired: `40-devrepo.sh`
+
+`devrepo` and `devaccept` used to be functions in `~/.bashrc.d/40-devrepo.sh`.
+`install.sh` copies but never deletes, and a shell function shadows a same-named
+command on `PATH`, so a stale deployed copy hides the bin. Remove it once, as ethan:
+
+```bash
+rm ~/.bashrc.d/40-devrepo.sh && unset -f devrepo devaccept
+```
+
+[`scripts/find-orphaned-deploys.sh`](../scripts/find-orphaned-deploys.sh) lists
+deployed files like this whose repo source is gone.

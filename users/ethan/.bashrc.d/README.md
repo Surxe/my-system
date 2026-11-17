@@ -9,5 +9,5 @@ loader. See `development/shell-helpers.md`.
 | `10-devsh.sh` | present | `devsh` |
 | `20-devperms.sh` | present | `devperms` (the shell wrapper that calls `sudo /usr/local/sbin/devperms`) |
 | `30-devsafe.sh` | present | `devsafe_ethan`, `devsafe_dev` (the repo and its submodules), `devsafe_paths` |
-| `40-devrepo.sh` | present | `devrepo` (`new`/`clone`/`fork`), `devaccept` |
+| `40-devrepo.sh` | **retired** | was `devrepo` + `devaccept`; now the `localbin/devrepo` bin (`accept` mode). Remove a stale deployed copy by hand: see `development/shell-helpers.md` |
 | `50-localbin.sh` | present | `~/.local/bin` on `PATH` |

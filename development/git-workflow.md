@@ -142,7 +142,7 @@ ambient auth to leak.
 
 Adding `Surxe-dev` as a collaborator on a personal repo creates a **pending
 invitation** it must accept before its PAT can push. That acceptance can only be
-performed by the invitee, so it happens on the dev side via `devaccept`
+performed by the invitee, so it happens on the dev side via `devrepo accept`
 ([shell-helpers.md](shell-helpers.md)) — not in `devscaffold`.
 
 | Property | How it's met |
@@ -200,7 +200,7 @@ needs, at minimum:
 - **`--private` path:** classic **`repo`** (no finer classic scope grants
   private-repo admin).
 - Do **not** grant `repo:invite` here — accepting invites is the dev side
-  (`devaccept`); this token only *creates* the invite.
+  (`devrepo accept`); this token only *creates* the invite.
 
 Gotcha: `gh repo create` uses the GraphQL `createRepository` mutation, which
 requires full `repo` even for public repos — that's why step 1 uses the REST
