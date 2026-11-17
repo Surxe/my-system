@@ -1,0 +1,63 @@
+#!/usr/bin/env bash
+# clip-copy -- ethan entry point for putting a prepared clip on the clipboard, ready to
+# paste into Discord (Ctrl+V).
+#
+# This is the MIRROR of clip-post, but the boundary runs the other way. clip-post reads
+# an ethan-owned secret then hops to `dev` to do the webhook upload. clip-copy does NO
+# dev work at all: the clip-viewer MCP already prepped the compressed rendition dev-side
+# and handed over its path; the only thing left is to set the clipboard, and the clipboard
+# lives in ethan's Wayland session, so this stays entirely as ethan.
+#
+# Two deliberate non-choices:
+#   1. It runs NO dev-tree code as ethan (the thing clip-post's header calls out): the
+#      percent-encoding is done with system python3 + stdlib only, and the copy is a plain
+#      wl-copy. Nothing from /srv/dev/repos executes here.
+#   2. It does not re-prep. It expects the exact file the MCP produced
+#      (<stem>_merged_<N>mb.mp4 in the dev-owned library, group-readable by ethan). Give it
+#      a path, not a stem.
+#
+# Advertises the file as text/uri-list (a file, not text) via wl-copy, which is how
+# KDE/Dolphin put a file on the clipboard; Discord attaches it on Ctrl+V. wl-copy
+# daemonizes to keep serving the selection after this script exits, so the paste still
+# works later.
+#
+# This is the review-gated COPY in ethan's ~/.local/bin (deployed by
+# my-system/users/install.sh -- ethan-bin.sh copies every localbin file). Usage:
+#   clip-copy "/srv/dev/clips/library/the goblin combo_merged_10mb.mp4"
+set -uo pipefail
+
+if [ "$#" -ne 1 ] || [ "$1" = "-h" ] || [ "$1" = "--help" ]; then
+    echo "usage: clip-copy <path-to-prepared-clip>" >&2
+    echo "  (the clip-viewer MCP's share_to_clipboard tool prints the exact command)" >&2
+    exit 2
+fi
+FILE="$1"
+
+if [ ! -r "$FILE" ]; then
+    echo "clip-copy: file not found or unreadable: $FILE" >&2
+    exit 1
+fi
+
+if [ -z "${WAYLAND_DISPLAY:-}" ] && [ -z "${XDG_RUNTIME_DIR:-}" ]; then
+    echo "clip-copy: no Wayland session in this shell (WAYLAND_DISPLAY/XDG_RUNTIME_DIR unset)." >&2
+    echo "  Run this inside your desktop session, as ethan." >&2
+    exit 1
+fi
+
+if ! command -v wl-copy >/dev/null 2>&1; then
+    echo "clip-copy: wl-copy not found (install wl-clipboard)" >&2
+    exit 1
+fi
+
+# file:// URI, percent-encoded exactly like clip-distributor/share.py's copy_file_to_clipboard
+# (Path.resolve().as_uri()). stdlib only -- no dev-tree import.
+uri=$(python3 -c 'import sys, pathlib; print(pathlib.Path(sys.argv[1]).resolve().as_uri())' "$FILE") || {
+    echo "clip-copy: could not build a file URI for: $FILE" >&2
+    exit 1
+}
+
+# text/uri-list wants CRLF-terminated URIs.
+printf '%s\r\n' "$uri" | wl-copy --type text/uri-list
+
+echo "clip-copy: copied to clipboard -- paste into Discord with Ctrl+V"
+echo "  $uri"
