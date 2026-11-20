@@ -17,6 +17,7 @@ Sourced by dev's `~/.bashrc` loader. Two sources feed `~dev/.bashrc.d/`, both as
 | `10-agents.sh` | dev-env (portable) | `cc` launcher (`claude --dangerously-skip-permissions`) + `ds` launcher (`dsh --profile dsh-tui`) + the mouse-release export |
 | `15-todo.sh` | this repo (box-specific) | todo cross-box sync env (`TODO_HUB_REMOTE`, `TODO_CLASSIFY_REMOTE`, remote classify cmd) |
 | `20-hs.sh` | this repo (box-specific) | `hs` — key-authenticated SSH into the home-server (interactive shell, or `hs cc` to land in Claude on the box) |
+| `25-rea.sh` | this repo (box-specific) | REA + Ghidra env: `GHIDRA_INSTALL_DIR` (pinned 12.1.4 zip in `~/Applications`), `JAVA_HOME` (Debian JDK 21), raised `REA_GHIDRA_STARTUP_TIMEOUT_MS` |
 
 Dev's `~/.bashrc` must contain the loader that sources this dir; `dev-env`'s
 `deploy_bashrc` adds it on first run if missing:
