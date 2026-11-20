@@ -38,6 +38,16 @@ skills/
   game/BepInEx paths and the dev->ethan boundary (stage in
   `/srv/dev/scratch/valheim-mods/`, hand ethan a `!bash` command), plus the
   Thunderstore resolve/download/verify flow. Instructions-only.
+- **reverse-engineer-anything** — REA's own agent skill (static/runtime reverse
+  engineering via Ghidra etc.), **vendored verbatim** from
+  [morluto/rea](https://github.com/morluto/rea) at `rea-agents-6.9.0` (MIT,
+  `LICENSE` alongside). Do not edit in place: refresh with
+  [`../../../scripts/sync-rea-skill.sh`](../../../scripts/sync-rea-skill.sh)
+  `<tag>` from the built clone at `/srv/dev/repos/rea`. Vendored rather than
+  installed by `rea setup --skill`, which would write into the live
+  `~/.claude/skills`. The skill leans on REA's MCP server; we use the `rea` CLI
+  instead (see its `references/connection-and-recovery.md`, "Continue through
+  an installed CLI").
 
 ## Adding a skill
 
