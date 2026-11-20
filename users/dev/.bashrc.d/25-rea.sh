@@ -11,7 +11,3 @@ export JAVA_HOME=/usr/lib/jvm/java-21-openjdk-amd64
 # Provider startup deadline covers import + auto-analysis. Default is 330000 ms
 # (5.5 min); a first analysis of a large UE5 shipping exe (~190 MB) takes hours.
 export REA_GHIDRA_STARTUP_TIMEOUT_MS=21600000   # 6 h
-
-# Persist the finished Ghidra analysis of the WRF game exe (see
-# /srv/dev/wrf/ghidra) so later `rea` runs restore it instead of re-analysing.
-export REA_GHIDRA_CHECKPOINT_DIR=/srv/dev/wrf/ghidra/rea-checkpoints
